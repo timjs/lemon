@@ -1,4 +1,16 @@
-module Lemon.Syntax exposing (Module(..))
+module Lemon.Syntax exposing
+  ( Alternative
+  , Atom(..)
+  , Basic(..)
+  , BasicType(..)
+  , Declaration(..)
+  , Expression(..)
+  , Module(..)
+  , Pattern(..)
+  , Scope
+  , Statement(..)
+  , Type(..)
+  )
 
 import Dict exposing (Dict)
 import Lemon.Name exposing (..)
@@ -9,7 +21,11 @@ import Lemon.Name exposing (..)
 
 
 type Module
-  = Module (Dict Name Declaration)
+  = Module Scope
+
+
+type alias Scope =
+  Dict Name Declaration
 
 
 type Declaration
@@ -22,12 +38,16 @@ type Declaration
 
 type Expression
   = Atom Atom
-  | Lambda ( Pattern, Type ) Expression
+  | Lambda Pattern Type Expression
   | Call Expression Expression
-  | Let (Dict Name Declaration) Expression
-  | Case Expression (List ( Pattern, Expression ))
+  | Let Scope Expression
+  | Case Expression (List Alternative)
   | If Expression Expression Expression
   | Sequence (List Statement)
+
+
+type alias Alternative =
+  ( Pattern, Expression )
 
 
 type Statement
