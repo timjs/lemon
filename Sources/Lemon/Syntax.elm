@@ -9,11 +9,11 @@ import Lemon.Name exposing (..)
 
 
 type Module
-  = Module (List Declaration)
+  = Module (Dict Name Declaration)
 
 
 type Declaration
-  = Value Name Type (List Pattern) Expression
+  = Value Type Expression
 
 
 
@@ -24,7 +24,7 @@ type Expression
   = Atom Atom
   | Lambda ( Pattern, Type ) Expression
   | Call Expression Expression
-  | Let (List Declaration) Expression
+  | Let (Dict Name Declaration) Expression
   | Case Expression (List ( Pattern, Expression ))
   | If Expression Expression Expression
   | Sequence (List Statement)
