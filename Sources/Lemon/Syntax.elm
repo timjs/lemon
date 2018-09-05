@@ -10,6 +10,7 @@ module Lemon.Syntax exposing
   , Scope
   , Statement(..)
   , Type(..)
+  , empty
   )
 
 import Dict exposing (Dict)
@@ -114,3 +115,11 @@ type BasicType
   | TInt
   | TFloat
   | TString
+
+
+
+-- Init ------------------------------------------------------------------------
+
+
+empty : Scope
+empty = Dict.empty
