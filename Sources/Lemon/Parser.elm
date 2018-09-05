@@ -1,4 +1,4 @@
-module Flow.Parser exposing (parse)
+module Lemon.Parser exposing (parse)
 
 import Dict exposing (Dict)
 import Lemon.Name exposing (Name)
