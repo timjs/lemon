@@ -5,6 +5,7 @@ import Lemon.Name exposing (Name)
 import Lemon.Syntax as Syntax exposing (..)
 import Parser exposing (..)
 import Parser.Expression
+import Parser.Extras exposing (parens)
 import Set exposing (Set)
 
 
@@ -49,6 +50,15 @@ declaration =
 
 expression : Parser Expression
 expression =
+  let
+    maybeCall expr =
+      oneOf
+        [ succeed (Call expr)
+            |. backtrackable spaces
+            |= by spaces expression
+        , succeed expr
+        ]
+  in
   oneOf
     [ succeed Atom |= atom
     , succeed Lambda
@@ -56,32 +66,42 @@ expression =
         |= by spaces parameter
         |. arrow
         |= lazy (\_ -> expression)
-
-    --FIXME
-    -- , succeed Call
-    --     |= lazy (\_ -> expression)
-    --     |= lazy (\_ -> expression)
     , succeed Let
         |. keyword "let"
+        |. spaces
         |= lazy (\_ -> scope)
+        |. spaces
         |. keyword "in"
+        |. spaces
         |= lazy (\_ -> expression)
     , succeed Case
         |. keyword "case"
+        |. spaces
         |= lazy (\_ -> expression)
+        |. spaces
         |. keyword "of"
+        |. spaces
         |= by semicolon alternative
     , succeed If
         |. keyword "if"
+        |. spaces
         |= lazy (\_ -> expression)
+        |. spaces
         |. keyword "then"
+        |. spaces
         |= lazy (\_ -> expression)
+        |. spaces
         |. keyword "else"
+        |. spaces
         |= lazy (\_ -> expression)
     , succeed Sequence
         |. keyword "do"
+        |. spaces
         |= by semicolon statement
+    , succeed identity
+        |= parens (lazy (\_ -> expression))
     ]
+    |> andThen maybeCall
 
 
 parameter : Parser Parameter
@@ -109,32 +129,43 @@ statement =
   oneOf
     [ succeed Set
         |. keyword "let"
+        |. spaces
         |= pattern
         |. equals
         |= lazy (\_ -> expression)
     , succeed (\x xs -> Par (x :: xs))
         |. keyword "do"
+        |. spaces
         |= by semicolon (lazy (\_ -> statement))
         |= by spaces
             (succeed identity
               |. keyword "also"
+              |. spaces
               |= by semicolon (lazy (\_ -> statement))
             )
     , map On <|
         by spaces <|
           succeed triple
             |. keyword "on"
+            |. spaces
             |= string
+            |. spaces
             |. keyword "when"
+            |. spaces
             |= lazy (\_ -> expression)
+            |. spaces
             |. keyword "do"
+            |. spaces
             |= by semicolon (lazy (\_ -> statement))
     , map When <|
         by spaces <|
           succeed Tuple.pair
             |. keyword "when"
+            |. spaces
             |= lazy (\_ -> expression)
+            |. spaces
             |. keyword "do"
+            |. spaces
             |= by semicolon (lazy (\_ -> statement))
     , succeed Syntax.Done |. keyword "done"
     , succeed Bind
@@ -243,18 +274,26 @@ record sep item =
 
 pattern : Parser Pattern
 pattern =
+  let
+    maybeCons left =
+      oneOf
+        [ succeed (PCons left)
+            |. backtrackable doublecolon
+            |= pattern
+        , succeed left
+        ]
+  in
   oneOf
     [ succeed PBasic |= basic
     , succeed PVariable |= lower
-    , succeed PSome |. keyword "Some" |= lazy (\_ -> pattern)
+    , succeed PSome |. keyword "Some" |. spaces |= lazy (\_ -> pattern)
     , succeed PNone |. keyword "None"
-
-    --FIXME
-    -- , succeed PCons |= lazy (\_ -> pattern) |. spacy doublecolon |= lazy (\_ -> pattern)
     , succeed PNil |. doublebracket
     , succeed PRecord |= record equals (lazy (\_ -> pattern))
     , succeed PIgnore |. underscore
+    , succeed identity |= parens (lazy (\_ -> pattern))
     ]
+    |> andThen maybeCons
 
 
 
@@ -279,13 +318,9 @@ type_ =
     , succeed TList |. keyword "list" |. spaces |= lazy (\_ -> type_)
     , succeed TRecord |= record colon (lazy (\_ -> type_))
     , succeed TTask |. keyword "task" |. spaces |= lazy (\_ -> type_)
+    , succeed identity |= parens (lazy (\_ -> type_))
     ]
     |> andThen maybeArrow
-
-
-
---FIXME
---, succeed TArrow |= lazy (\_ -> type_) |. arrow |= lazy (\_ -> type_)
 
 
 basicType : Parser BasicType
