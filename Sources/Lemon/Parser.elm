@@ -28,21 +28,21 @@ declaration : Parser ( Name, Declaration )
 declaration =
   let
     quadruple a b c d =
-      ( a, ( b, ( c, d ) ) )
-    check ( name1, ( annot, ( name2, body ) ) ) =
+      ( ( a, b ), ( c, d ) )
+    check ( ( name1, annot ), ( name2, body ) ) =
       if name1 == name2 then
         succeed ( name1, Value annot body )
       else
-        problem <| "names do not match:" ++ name1 ++ " and " ++ name2
+        problem <| "value names do not match: `" ++ name2 ++ "` should be `" ++ name1 ++ "`"
     run =
       succeed quadruple
         |= lower
         |. colon
-        |= type_ ()
+        |= type_
         |. semicolon
         |= lower
         |. equals
-        |= expression ()
+        |= expression
   in
   run
     |> andThen check
@@ -52,51 +52,55 @@ declaration =
 -- Expressions -----------------------------------------------------------------
 
 
-expression : () -> Parser Expression
-expression () =
+expression : Parser Expression
+expression =
   oneOf
     [ succeed Atom |= atom
     , succeed Lambda
         |. backslash
-        |= pattern ()
+        |= pattern
         |. colon
-        |= type_ ()
+        |= type_
         |. arrow
-        |= lazy expression
-    , succeed Call
-        |= lazy expression
-        |= lazy expression
+        |= lazy (\_ -> expression)
+
+    --FIXME
+    -- , succeed Call
+    --     |= lazy (\_ -> expression)
+    --     |= lazy (\_ -> expression)
     , succeed Let
-        |= scope
-        |= lazy expression
+        |. keyword "let"
+        |= lazy (\_ -> scope)
+        |. keyword "in"
+        |= lazy (\_ -> expression)
     , succeed Case
         |. keyword "case"
-        |= lazy expression
+        |= lazy (\_ -> expression)
         |. keyword "of"
-        |= chain ";" (alternative ())
+        |= chain ";" alternative
     , succeed If
         |. keyword "if"
-        |= lazy expression
+        |= lazy (\_ -> expression)
         |. keyword "then"
-        |= lazy expression
+        |= lazy (\_ -> expression)
         |. keyword "else"
-        |= lazy expression
+        |= lazy (\_ -> expression)
     , succeed Sequence
         |. keyword "do"
-        |= chain ";" (statement ())
+        |= chain ";" statement
     ]
 
 
-alternative : () -> Parser Alternative
-alternative () =
+alternative : Parser Alternative
+alternative =
   succeed Tuple.pair
-    |= pattern ()
+    |= pattern
     |. arrow
-    |= lazy expression
+    |= lazy (\_ -> expression)
 
 
-statement : () -> Parser Statement
-statement () =
+statement : Parser Statement
+statement =
   let
     triple x y z =
       ( x, y, z )
@@ -104,16 +108,16 @@ statement () =
   oneOf
     [ succeed Set
         |. keyword "let"
-        |= pattern ()
+        |= pattern
         |. equals
-        |= lazy expression
+        |= lazy (\_ -> expression)
     , succeed (\x xs -> Par (x :: xs))
         |. keyword "do"
-        |= chain ";" (lazy statement)
+        |= chain ";" (lazy (\_ -> statement))
         |= chain " "
             (succeed identity
               |. keyword "also"
-              |= chain ";" (lazy statement)
+              |= chain ";" (lazy (\_ -> statement))
             )
     , map On <|
         chain " " <|
@@ -121,23 +125,23 @@ statement () =
             |. keyword "on"
             |= string
             |. keyword "when"
-            |= lazy expression
+            |= lazy (\_ -> expression)
             |. keyword "do"
-            |= chain ";" (lazy statement)
+            |= chain ";" (lazy (\_ -> statement))
     , map When <|
         chain " " <|
           succeed Tuple.pair
             |. keyword "when"
-            |= lazy expression
+            |= lazy (\_ -> expression)
             |. keyword "do"
-            |= chain ";" (lazy statement)
+            |= chain ";" (lazy (\_ -> statement))
     , succeed Syntax.Done |. keyword "done"
     , succeed Bind
-        |= pattern ()
+        |= pattern
         |. arrow
-        |= lazy expression
+        |= lazy (\_ -> expression)
     , succeed Do
-        |= lazy expression
+        |= lazy (\_ -> expression)
     ]
 
 
@@ -150,10 +154,10 @@ atom =
   oneOf
     [ succeed Basic |= basic
     , succeed Variable |= lower
-    , succeed Some |. keyword "Some" |= lazy expression
+    , succeed Some |. keyword "Some" |. spaces |= lazy (\_ -> expression)
     , succeed None |. keyword "None"
-    , succeed List |= list (lazy expression)
-    , succeed Record |= dict colon (lazy expression)
+    , succeed List |= list (lazy (\_ -> expression))
+    , succeed Record |= dict colon (lazy (\_ -> expression))
     ]
 
 
@@ -162,7 +166,7 @@ basic =
   oneOf
     [ succeed (Bool True) |. keyword "True"
     , succeed (Bool False) |. keyword "False"
-    , succeed Int |= int
+    , succeed Int |= backtrackable int --NOTE: ints are like floats, we need to backtrack here
     , succeed Float |= float
     , succeed String |= string
     ]
@@ -180,10 +184,19 @@ int =
 
 float : Parser Float
 float =
+  let
+    inner =
+      oneOf
+        [ symbol "."
+            |> andThen (always <| problem "floating point numbers must start with a digit, like 0.25")
+        , Parser.float
+        ]
+  in
   oneOf
-    [ symbol "."
-        |> andThen (always <| problem "floating point numbers must start with a digit, like 0.25")
-    , Parser.float
+    [ succeed negate
+        |. symbol "-"
+        |= inner
+    , inner
     ]
 
 
@@ -191,46 +204,24 @@ string : Parser String
 string =
   succeed identity
     |. token "\""
-    |= loop [] stringHelper
-
-
-stringHelper : List String -> Parser (Step (List String) String)
-stringHelper revChunks =
-  let
-    add chunk =
-      Loop (chunk :: revChunks)
-    isUninteresting char =
-      char /= '\\' && char /= '"'
-  in
-  oneOf
-    [ succeed add
-        |. token "\\"
-        |= oneOf
-            [ map (\_ -> "\n") (token "n")
-            , map (\_ -> "\t") (token "t")
-            , map (\_ -> "\u{000D}") (token "r")
-            ]
-    , succeed (Parser.Done <| String.join "" <| List.reverse revChunks)
-        |. token "\""
-    , succeed add
-        |= (chompWhile isUninteresting |> getChompedString)
-    ]
+    |= (chompWhile ((/=) '"') |> getChompedString)
+    |. token "\""
 
 
 
 -- Patterns --------------------------------------------------------------------
 
 
-pattern : () -> Parser Pattern
-pattern () =
+pattern : Parser Pattern
+pattern =
   oneOf
     [ succeed PBasic |= basic
     , succeed PVariable |= lower
-    , succeed PSome |. keyword "Some" |= lazy pattern
+    , succeed PSome |. keyword "Some" |= lazy (\_ -> pattern)
     , succeed PNone |. keyword "None"
-    , succeed PCons |= lazy pattern |. doublecolon |= lazy pattern
+    , succeed PCons |= lazy (\_ -> pattern) |. doublecolon |= lazy (\_ -> pattern)
     , succeed PNil |. doublebracket
-    , succeed PRecord |= dict equals (lazy pattern)
+    , succeed PRecord |= dict equals (lazy (\_ -> pattern))
     , succeed PIgnore |. underscore
     ]
 
@@ -239,16 +230,18 @@ pattern () =
 -- Types -----------------------------------------------------------------------
 
 
-type_ : () -> Parser Type
-type_ () =
+type_ : Parser Type
+type_ =
   oneOf
     [ succeed TBasic |= basicType
     , succeed TVariable |= universal
-    , succeed TOption |. keyword "option" |= lazy type_
-    , succeed TList |. keyword "list" |= lazy type_
-    , succeed TRecord |= dict colon (lazy type_)
-    , succeed TTask |. keyword "task" |= lazy type_
-    , succeed TArrow |= lazy type_ |. arrow |= lazy type_
+    , succeed TOption |. keyword "option" |= lazy (\_ -> type_)
+    , succeed TList |. keyword "list" |= lazy (\_ -> type_)
+    , succeed TRecord |= dict colon (lazy (\_ -> type_))
+    , succeed TTask |. keyword "task" |= lazy (\_ -> type_)
+
+    --FIXME
+    --, succeed TArrow |= lazy (\_ -> type_) |. arrow |= lazy (\_ -> type_)
     ]
 
 

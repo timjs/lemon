@@ -99,3 +99,30 @@ handleProblem problem =
       p [] [ text <| "a closing `" ++ closing ++ "`" ]
     Fail message ->
       p [] [ text message ]
+
+
+
+--
+
+
+stringHelper : List String -> Parser (Step (List String) String)
+stringHelper revChunks =
+  let
+    add chunk =
+      Loop (chunk :: revChunks)
+    isUninteresting char =
+      char /= '\\' && char /= '"'
+  in
+  oneOf
+    [ succeed add
+        |. token "\\"
+        |= oneOf
+            [ map (\_ -> "\n") (token "n")
+            , map (\_ -> "\t") (token "t")
+            , map (\_ -> "\u{000D}") (token "r")
+            ]
+    , succeed (Parser.Done <| String.join "" <| List.reverse revChunks)
+        |. token "\""
+    , succeed add
+        |= (chompWhile isUninteresting |> getChompedString)
+    ]
