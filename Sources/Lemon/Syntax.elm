@@ -6,6 +6,7 @@ module Lemon.Syntax exposing
   , Declaration(..)
   , Expression(..)
   , Module(..)
+  , Parameter
   , Pattern(..)
   , Scope
   , Statement(..)
@@ -30,7 +31,7 @@ type alias Scope =
 
 
 type Declaration
-  = Value Type Expression
+  = Value Type (List Pattern) Expression
 
 
 
@@ -39,12 +40,16 @@ type Declaration
 
 type Expression
   = Atom Atom
-  | Lambda Pattern Type Expression
-  | Call Expression Expression
+  | Lambda (List Parameter) Expression
+  | Call Expression (List Expression)
   | Let Scope Expression
   | Case Expression (List Alternative)
   | If Expression Expression Expression
   | Sequence (List Statement)
+
+
+type alias Parameter =
+  ( Pattern, Type )
 
 
 type alias Alternative =

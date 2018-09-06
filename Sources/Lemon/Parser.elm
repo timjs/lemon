@@ -1,6 +1,7 @@
 module Lemon.Parser exposing (parse)
 
 import Dict exposing (Dict)
+import Flip exposing (..)
 import Lemon.Name exposing (Name)
 import Lemon.Syntax as Syntax exposing (..)
 import Parser exposing (..)
@@ -17,30 +18,37 @@ parse = run module_
 
 
 module_ : Parser Module
-module_ = map Module scope
+module_ =
+  succeed Module
+    |= scope
+    |. spaces
+    |. end
 
 
 scope : Parser Scope
-scope = map Dict.fromList <| chain ";" declaration
+scope = map Dict.fromList <| chain semicolon declaration
 
 
 declaration : Parser ( Name, Declaration )
 declaration =
   let
-    quadruple a b c d =
-      ( ( a, b ), ( c, d ) )
-    check ( ( name1, annot ), ( name2, body ) ) =
+    group name1 annot name2 params body =
+      { name1 = name1, annot = annot, name2 = name2, params = params, body = body }
+    check { name1, annot, name2, params, body } =
       if name1 == name2 then
-        succeed ( name1, Value annot body )
+        succeed ( name1, Value annot params body )
       else
         problem <| "value names do not match: `" ++ name2 ++ "` should be `" ++ name1 ++ "`"
     run =
-      succeed quadruple
+      succeed group
         |= lower
         |. colon
         |= type_
         |. semicolon
         |= lower
+        |. spaces
+        |= chain spaces pattern
+        |. spaces
         |. equals
         |= expression
   in
@@ -58,9 +66,7 @@ expression =
     [ succeed Atom |= atom
     , succeed Lambda
         |. backslash
-        |= pattern
-        |. colon
-        |= type_
+        |= chain spaces parameter
         |. arrow
         |= lazy (\_ -> expression)
 
@@ -77,7 +83,7 @@ expression =
         |. keyword "case"
         |= lazy (\_ -> expression)
         |. keyword "of"
-        |= chain ";" alternative
+        |= chain semicolon alternative
     , succeed If
         |. keyword "if"
         |= lazy (\_ -> expression)
@@ -87,8 +93,16 @@ expression =
         |= lazy (\_ -> expression)
     , succeed Sequence
         |. keyword "do"
-        |= chain ";" statement
+        |= chain semicolon statement
     ]
+
+
+parameter : Parser Parameter
+parameter =
+  succeed Tuple.pair
+    |= pattern
+    |. colon
+    |= type_
 
 
 alternative : Parser Alternative
@@ -113,28 +127,28 @@ statement =
         |= lazy (\_ -> expression)
     , succeed (\x xs -> Par (x :: xs))
         |. keyword "do"
-        |= chain ";" (lazy (\_ -> statement))
-        |= chain " "
+        |= chain semicolon (lazy (\_ -> statement))
+        |= chain spaces
             (succeed identity
               |. keyword "also"
-              |= chain ";" (lazy (\_ -> statement))
+              |= chain semicolon (lazy (\_ -> statement))
             )
     , map On <|
-        chain " " <|
+        chain spaces <|
           succeed triple
             |. keyword "on"
             |= string
             |. keyword "when"
             |= lazy (\_ -> expression)
             |. keyword "do"
-            |= chain ";" (lazy (\_ -> statement))
+            |= chain semicolon (lazy (\_ -> statement))
     , map When <|
-        chain " " <|
+        chain spaces <|
           succeed Tuple.pair
             |. keyword "when"
             |= lazy (\_ -> expression)
             |. keyword "do"
-            |= chain ";" (lazy (\_ -> statement))
+            |= chain semicolon (lazy (\_ -> statement))
     , succeed Syntax.Done |. keyword "done"
     , succeed Bind
         |= pattern
@@ -219,7 +233,9 @@ pattern =
     , succeed PVariable |= lower
     , succeed PSome |. keyword "Some" |= lazy (\_ -> pattern)
     , succeed PNone |. keyword "None"
-    , succeed PCons |= lazy (\_ -> pattern) |. doublecolon |= lazy (\_ -> pattern)
+
+    --FIXME
+    -- , succeed PCons |= lazy (\_ -> pattern) |. spacy doublecolon |= lazy (\_ -> pattern)
     , succeed PNil |. doublebracket
     , succeed PRecord |= dict equals (lazy (\_ -> pattern))
     , succeed PIgnore |. underscore
@@ -232,17 +248,29 @@ pattern =
 
 type_ : Parser Type
 type_ =
+  let
+    maybeArrow left =
+      oneOf
+        [ succeed (TArrow left)
+            |. backtrackable arrow
+            |= type_
+        , succeed left
+        ]
+  in
   oneOf
     [ succeed TBasic |= basicType
     , succeed TVariable |= universal
-    , succeed TOption |. keyword "option" |= lazy (\_ -> type_)
-    , succeed TList |. keyword "list" |= lazy (\_ -> type_)
+    , succeed TOption |. keyword "option" |. spaces |= lazy (\_ -> type_)
+    , succeed TList |. keyword "list" |. spaces |= lazy (\_ -> type_)
     , succeed TRecord |= dict colon (lazy (\_ -> type_))
-    , succeed TTask |. keyword "task" |= lazy (\_ -> type_)
-
-    --FIXME
-    --, succeed TArrow |= lazy (\_ -> type_) |. arrow |= lazy (\_ -> type_)
+    , succeed TTask |. keyword "task" |. spaces |= lazy (\_ -> type_)
     ]
+    |> andThen maybeArrow
+
+
+
+--FIXME
+--, succeed TArrow |= lazy (\_ -> type_) |. arrow |= lazy (\_ -> type_)
 
 
 basicType : Parser BasicType
@@ -260,16 +288,37 @@ basicType =
 -- Sequences --
 
 
-chain : String -> Parser a -> Parser (List a)
+some : Parser a -> Parser (List a)
+some item =
+  succeed (::)
+    |= item
+    |= many item
+
+
+many : Parser a -> Parser (List a)
+many item =
+  let
+    helper vs =
+      oneOf
+        [ succeed (\v -> Parser.Loop (v :: vs))
+            |= item
+        , succeed <| Parser.Done (List.reverse vs)
+        ]
+  in
+  loop [] helper
+
+
+chain : Parser () -> Parser a -> Parser (List a)
 chain sep item =
-  sequence
-    { start = ""
-    , separator = sep
-    , end = ""
-    , spaces = spaces
-    , item = item
-    , trailing = Forbidden
-    }
+  let
+    more =
+      succeed identity
+        |. backtrackable sep
+        |= item
+  in
+  succeed (::)
+    |= item
+    |= many more
 
 
 list : Parser a -> Parser (List a)
@@ -313,6 +362,10 @@ spacy item =
     |. spaces
 
 
+comma : Parser ()
+comma = spacy <| symbol ","
+
+
 colon : Parser ()
 colon = spacy <| symbol ":"
 
@@ -325,16 +378,16 @@ equals : Parser ()
 equals = spacy <| symbol "="
 
 
-underscore : Parser ()
-underscore = spacy <| symbol "_"
-
-
 backslash : Parser ()
 backslash = spacy <| symbol "\\"
 
 
 arrow : Parser ()
 arrow = spacy <| symbol "->"
+
+
+underscore : Parser ()
+underscore = spacy <| symbol "_"
 
 
 doublecolon : Parser ()
