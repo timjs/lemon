@@ -25,7 +25,7 @@ module_ =
 
 
 scope : Parser Scope
-scope = chain semicolon declaration
+scope = by semicolon declaration
 
 
 declaration : Parser Declaration
@@ -37,7 +37,7 @@ declaration =
     |. semicolon
     |= lower
     |. spaces
-    |= chain spaces pattern
+    |= by spaces pattern
     |. spaces
     |. equals
     |= expression
@@ -53,7 +53,7 @@ expression =
     [ succeed Atom |= atom
     , succeed Lambda
         |. backslash
-        |= chain spaces parameter
+        |= by spaces parameter
         |. arrow
         |= lazy (\_ -> expression)
 
@@ -70,7 +70,7 @@ expression =
         |. keyword "case"
         |= lazy (\_ -> expression)
         |. keyword "of"
-        |= chain semicolon alternative
+        |= by semicolon alternative
     , succeed If
         |. keyword "if"
         |= lazy (\_ -> expression)
@@ -80,7 +80,7 @@ expression =
         |= lazy (\_ -> expression)
     , succeed Sequence
         |. keyword "do"
-        |= chain semicolon statement
+        |= by semicolon statement
     ]
 
 
@@ -114,28 +114,28 @@ statement =
         |= lazy (\_ -> expression)
     , succeed (\x xs -> Par (x :: xs))
         |. keyword "do"
-        |= chain semicolon (lazy (\_ -> statement))
-        |= chain spaces
+        |= by semicolon (lazy (\_ -> statement))
+        |= by spaces
             (succeed identity
               |. keyword "also"
-              |= chain semicolon (lazy (\_ -> statement))
+              |= by semicolon (lazy (\_ -> statement))
             )
     , map On <|
-        chain spaces <|
+        by spaces <|
           succeed triple
             |. keyword "on"
             |= string
             |. keyword "when"
             |= lazy (\_ -> expression)
             |. keyword "do"
-            |= chain semicolon (lazy (\_ -> statement))
+            |= by semicolon (lazy (\_ -> statement))
     , map When <|
-        chain spaces <|
+        by spaces <|
           succeed Tuple.pair
             |. keyword "when"
             |= lazy (\_ -> expression)
             |. keyword "do"
-            |= chain semicolon (lazy (\_ -> statement))
+            |= by semicolon (lazy (\_ -> statement))
     , succeed Syntax.Done |. keyword "done"
     , succeed Bind
         |= pattern
@@ -209,6 +209,34 @@ string =
     |. token "\""
 
 
+list : Parser a -> Parser (List a)
+list item =
+  sequence
+    { start = "["
+    , separator = ","
+    , end = "]"
+    , spaces = spaces
+    , item = item
+    , trailing = Forbidden
+    }
+
+
+record : Parser () -> Parser a -> Parser (Fields a)
+record sep item =
+  sequence
+    { start = "{"
+    , separator = ","
+    , end = "}"
+    , spaces = spaces
+    , item =
+        succeed Tuple.pair
+          |= lower
+          |. sep
+          |= item
+    , trailing = Forbidden
+    }
+
+
 
 -- Patterns --------------------------------------------------------------------
 
@@ -272,7 +300,6 @@ basicType =
 
 
 -- Helpers ---------------------------------------------------------------------
--- Sequences --
 
 
 some : Parser a -> Parser (List a)
@@ -295,8 +322,8 @@ many item =
   loop [] helper
 
 
-chain : Parser () -> Parser a -> Parser (List a)
-chain sep item =
+by : Parser () -> Parser a -> Parser (List a)
+by sep item =
   let
     more =
       succeed identity
@@ -306,34 +333,6 @@ chain sep item =
   succeed (::)
     |= item
     |= many more
-
-
-list : Parser a -> Parser (List a)
-list item =
-  sequence
-    { start = "["
-    , separator = ","
-    , end = "]"
-    , spaces = spaces
-    , item = item
-    , trailing = Forbidden
-    }
-
-
-record : Parser () -> Parser a -> Parser (Fields a)
-record sep item =
-  sequence
-    { start = "{"
-    , separator = ","
-    , end = "}"
-    , spaces = spaces
-    , item =
-        succeed Tuple.pair
-          |= lower
-          |. sep
-          |= item
-    , trailing = Forbidden
-    }
 
 
 
