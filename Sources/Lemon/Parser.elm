@@ -1,10 +1,10 @@
 module Lemon.Parser exposing (parse)
 
-import Flip exposing (..)
+import Flip exposing (flip)
 import Lemon.Name exposing (Name)
-import Lemon.Syntax as Syntax exposing (..)
+import Lemon.Syntax.Abstract as Syntax exposing (..)
+import Lemon.Syntax.Common as Syntax exposing (..)
 import Parser exposing (..)
-import Parser.Expression
 import Parser.Extras exposing (parens)
 import Set exposing (Set)
 
@@ -20,6 +20,7 @@ parse = run module_
 module_ : Parser Module
 module_ =
   succeed Module
+    |. spaces
     |= scope
     |. spaces
     |. end
@@ -112,7 +113,7 @@ parameter =
     |= type_
 
 
-alternative : Parser Alternative
+alternative : Parser (Alternative Expression)
 alternative =
   succeed Tuple.pair
     |= pattern
@@ -120,7 +121,7 @@ alternative =
     |= lazy (\_ -> expression)
 
 
-statement : Parser Statement
+statement : Parser (Statement Expression)
 statement =
   let
     triple x y z =
@@ -181,7 +182,7 @@ statement =
 -- Atoms -----------------------------------------------------------------------
 
 
-atom : Parser Atom
+atom : Parser (Atom Expression)
 atom =
   oneOf
     [ succeed Basic |= basic

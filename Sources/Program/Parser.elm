@@ -11,8 +11,8 @@ import Dict
 import Html exposing (..)
 import Html.Attributes as Html
 import Html.Events as Html
-import Lemon.Parser as Lemon
-import Lemon.Syntax as Lemon
+import Lemon.Parser exposing (parse)
+import Lemon.Syntax.Abstract exposing (Module(..), empty)
 import List.Extra as List
 import Parser
 
@@ -23,18 +23,23 @@ import Parser
 
 type alias Model =
   { input : String
-  , output : Result (List Parser.DeadEnd) Lemon.Module
+  , output : Result (List Parser.DeadEnd) Module
   }
 
 
 example : String
-example = "id : 'a -> 'a; id = \\x -> x"
+example = """
+map : ('a -> 'b) -> list 'a -> list 'b;
+map f list = case list of
+  [] -> [];
+  x :: xs -> cons (f x) (map f xs)
+  """
 
 
 init : Model
 init =
   { input = example
-  , output = Ok (Lemon.Module Lemon.empty)
+  , output = Ok (Module empty)
   }
 
 
@@ -52,7 +57,7 @@ update msg model =
     Enter string ->
       { model
         | input = string
-        , output = Lemon.parse string
+        , output = parse string
       }
 
 
