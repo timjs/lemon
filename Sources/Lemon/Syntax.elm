@@ -5,6 +5,7 @@ module Lemon.Syntax exposing
   , BasicType(..)
   , Declaration(..)
   , Expression(..)
+  , Fields
   , Module(..)
   , Parameter
   , Pattern(..)
@@ -14,7 +15,6 @@ module Lemon.Syntax exposing
   , empty
   )
 
-import Dict exposing (Dict)
 import Lemon.Name exposing (..)
 
 
@@ -27,11 +27,11 @@ type Module
 
 
 type alias Scope =
-  Dict Name Declaration
+  List Declaration
 
 
 type Declaration
-  = Value Type (List Pattern) Expression
+  = Value Name Type Name (List Pattern) Expression
 
 
 
@@ -76,7 +76,11 @@ type Atom
   | Some Expression
   | None
   | List (List Expression)
-  | Record (Dict Name Expression)
+  | Record (Fields Expression)
+
+
+type alias Fields a =
+  List ( Name, a )
 
 
 type Basic
@@ -97,7 +101,7 @@ type Pattern
   | PNone
   | PCons Pattern Pattern
   | PNil
-  | PRecord (Dict Name Pattern)
+  | PRecord (Fields Pattern)
   | PIgnore
 
 
@@ -110,7 +114,7 @@ type Type
   | TVariable Name
   | TOption Type
   | TList Type
-  | TRecord (Dict Name Type)
+  | TRecord (Fields Type)
   | TTask Type
   | TArrow Type Type
 
@@ -127,4 +131,4 @@ type BasicType
 
 
 empty : Scope
-empty = Dict.empty
+empty = []

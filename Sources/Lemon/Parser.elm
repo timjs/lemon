@@ -1,6 +1,5 @@
 module Lemon.Parser exposing (parse)
 
-import Dict exposing (Dict)
 import Flip exposing (..)
 import Lemon.Name exposing (Name)
 import Lemon.Syntax as Syntax exposing (..)
@@ -26,34 +25,22 @@ module_ =
 
 
 scope : Parser Scope
-scope = map Dict.fromList <| chain semicolon declaration
+scope = chain semicolon declaration
 
 
-declaration : Parser ( Name, Declaration )
+declaration : Parser Declaration
 declaration =
-  let
-    group name1 annot name2 params body =
-      { name1 = name1, annot = annot, name2 = name2, params = params, body = body }
-    check { name1, annot, name2, params, body } =
-      if name1 == name2 then
-        succeed ( name1, Value annot params body )
-      else
-        problem <| "value names do not match: `" ++ name2 ++ "` should be `" ++ name1 ++ "`"
-    run =
-      succeed group
-        |= lower
-        |. colon
-        |= type_
-        |. semicolon
-        |= lower
-        |. spaces
-        |= chain spaces pattern
-        |. spaces
-        |. equals
-        |= expression
-  in
-  run
-    |> andThen check
+  succeed Value
+    |= lower
+    |. colon
+    |= type_
+    |. semicolon
+    |= lower
+    |. spaces
+    |= chain spaces pattern
+    |. spaces
+    |. equals
+    |= expression
 
 
 
@@ -171,7 +158,7 @@ atom =
     , succeed Some |. keyword "Some" |. spaces |= lazy (\_ -> expression)
     , succeed None |. keyword "None"
     , succeed List |= list (lazy (\_ -> expression))
-    , succeed Record |= dict colon (lazy (\_ -> expression))
+    , succeed Record |= record colon (lazy (\_ -> expression))
     ]
 
 
@@ -237,7 +224,7 @@ pattern =
     --FIXME
     -- , succeed PCons |= lazy (\_ -> pattern) |. spacy doublecolon |= lazy (\_ -> pattern)
     , succeed PNil |. doublebracket
-    , succeed PRecord |= dict equals (lazy (\_ -> pattern))
+    , succeed PRecord |= record equals (lazy (\_ -> pattern))
     , succeed PIgnore |. underscore
     ]
 
@@ -262,7 +249,7 @@ type_ =
     , succeed TVariable |= universal
     , succeed TOption |. keyword "option" |. spaces |= lazy (\_ -> type_)
     , succeed TList |. keyword "list" |. spaces |= lazy (\_ -> type_)
-    , succeed TRecord |= dict colon (lazy (\_ -> type_))
+    , succeed TRecord |= record colon (lazy (\_ -> type_))
     , succeed TTask |. keyword "task" |. spaces |= lazy (\_ -> type_)
     ]
     |> andThen maybeArrow
@@ -333,21 +320,20 @@ list item =
     }
 
 
-dict : Parser () -> Parser a -> Parser (Dict Name a)
-dict sep item =
-  map Dict.fromList <|
-    sequence
-      { start = "{"
-      , separator = ","
-      , end = "}"
-      , spaces = spaces
-      , item =
-          succeed Tuple.pair
-            |= lower
-            |. sep
-            |= item
-      , trailing = Forbidden
-      }
+record : Parser () -> Parser a -> Parser (Fields a)
+record sep item =
+  sequence
+    { start = "{"
+    , separator = ","
+    , end = "}"
+    , spaces = spaces
+    , item =
+        succeed Tuple.pair
+          |= lower
+          |. sep
+          |= item
+    , trailing = Forbidden
+    }
 
 
 
