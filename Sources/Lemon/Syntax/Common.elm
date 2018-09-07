@@ -10,6 +10,8 @@ module Lemon.Syntax.Common exposing
   , Type(..)
   )
 
+--XXX: Deriving Functor for Statement and Atom would be awesome here.
+
 import Lemon.Name exposing (Name)
 
 
