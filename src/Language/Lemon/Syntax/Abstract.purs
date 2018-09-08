@@ -1,30 +1,32 @@
-module Lemon.Syntax.Abstract exposing
+module Language.Lemon.Syntax.Abstract
   ( Declaration(..)
   , Expression(..)
   , Module(..)
   , Scope
   , empty
-  )
+  ) where
 
 --XXX: Actually we would like to re-export the Syntax.Common module...
 
-import Lemon.Name exposing (Name)
-import Lemon.Syntax.Common exposing (..)
+import Data.List (List(..))
+
+import Language.Lemon.Name (Name)
+import Language.Lemon.Syntax.Common
 
 
 
 -- Modules and Definitions -----------------------------------------------------
 
 
-type Module
+data Module
   = Module Scope
 
 
-type alias Scope =
+type Scope =
   List Declaration
 
 
-type Declaration
+data Declaration
   = Value Name Type Name (List Pattern) Expression
 
 
@@ -32,7 +34,7 @@ type Declaration
 -- Expressions -----------------------------------------------------------------
 
 
-type Expression
+data Expression
   = Atom (Atom Expression)
   | Lambda (List Parameter) Expression
   | Call Expression (List Expression)
@@ -46,5 +48,5 @@ type Expression
 -- Init ------------------------------------------------------------------------
 
 
-empty : Scope
-empty = []
+empty :: Scope
+empty = Nil

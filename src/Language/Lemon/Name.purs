@@ -1,18 +1,28 @@
-module Lemon.Name exposing (Name, isLower, isUpper)
+module Language.Lemon.Name
+  ( Name
+  , isLower
+  , isUpper
+  ) where
 
 
-type alias Name =
+import Basics
+
+import Data.String.CodeUnits as String
+import Data.Char.Unicode as Char
+
+
+type Name =
   String
 
 
-checkFirst : (Char -> Bool) -> String -> Bool
+checkFirst :: (Char -> Boolean) -> Name -> Boolean
 checkFirst pred =
-  String.uncons >> Maybe.map (Tuple.first >> pred) >> Maybe.withDefault False
+  String.uncons >> map (_.head >> pred) >> fromMaybe false
 
 
-isUpper : Name -> Bool
+isUpper :: Name -> Boolean
 isUpper = checkFirst Char.isUpper
 
 
-isLower : Name -> Bool
+isLower :: Name -> Boolean
 isLower = checkFirst Char.isLower

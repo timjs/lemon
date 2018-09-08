@@ -1,4 +1,4 @@
-module Lemon.Syntax.Common exposing
+module Language.Lemon.Syntax.Common
   ( Alternative
   , Atom(..)
   , Basic(..)
@@ -8,24 +8,25 @@ module Lemon.Syntax.Common exposing
   , Pattern(..)
   , Statement(..)
   , Type(..)
-  )
+  ) where
 
 --XXX: Deriving Functor for Statement and Atom would be awesome here.
 
-import Lemon.Name exposing (Name)
+import Data.List (List)
+import Language.Lemon.Name (Name)
 
 
 
 -- Statements ------------------------------------------------------------------
 
 
-type Statement e
+data Statement e
   = Set Pattern e
   | Bind Pattern e
   | Do e
   | Par (List (List (Statement e)))
-  | On (List ( Name, e, List (Statement e) ))
-  | When (List ( e, List (Statement e) ))
+  | On (List { action :: Name, predicate :: e, body :: List (Statement e) })
+  | When (List { predicate :: e, body :: List (Statement e) })
   | Done
 
 
@@ -33,7 +34,7 @@ type Statement e
 -- Atoms -----------------------------------------------------------------------
 
 
-type Atom e
+data Atom e
   = Basic Basic
   | Variable Name
   | Some e
@@ -42,14 +43,14 @@ type Atom e
   | Record (Fields e)
 
 
-type alias Fields a =
-  List ( Name, a )
+type Fields a =
+  List { name :: Name, value :: a }
 
 
-type Basic
-  = Bool Bool
+data Basic
+  = Bool Boolean
   | Int Int
-  | Float Float
+  | Float Number
   | String String
 
 
@@ -57,7 +58,7 @@ type Basic
 -- Patterns --------------------------------------------------------------------
 
 
-type Pattern
+data Pattern
   = PBasic Basic
   | PVariable Name
   | PSome Pattern
@@ -68,19 +69,19 @@ type Pattern
   | PIgnore
 
 
-type alias Parameter =
-  ( Pattern, Type )
+type Parameter =
+  { pattern :: Pattern, type :: Type }
 
 
-type alias Alternative e =
-  ( Pattern, e )
+type Alternative e =
+  { pattern :: Pattern, body :: e }
 
 
 
 -- Types -----------------------------------------------------------------------
 
 
-type Type
+data Type
   = TBasic BasicType
   | TVariable Name
   | TOption Type
@@ -90,7 +91,7 @@ type Type
   | TArrow Type Type
 
 
-type BasicType
+data BasicType
   = TBool
   | TInt
   | TFloat
