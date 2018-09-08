@@ -1,4 +1,4 @@
-module Lemon.Syntax.Canonical exposing
+module Language.Lemon.Syntax.Canonical
   ( Declaration(..)
   , Error(..)
   , Expression(..)
@@ -6,31 +6,32 @@ module Lemon.Syntax.Canonical exposing
   , Scope
   , canonicalise
   , empty
-  )
-
-import Dict exposing (Dict)
-import Helpers
-import Lemon.Name exposing (Name)
-import Lemon.Syntax.Abstract as Abstract
-import Lemon.Syntax.Common exposing (..)
+  ) where
 
 
-hole = Debug.todo ""
+import Basics
+
+import Data.Map (Map)
+import Data.Map as Map
+import Data.List (List)
+
+import Language.Lemon.Syntax.Abstract as Abstract
+import Language.Lemon.Syntax.Common
 
 
 
 -- Modules and Definitions -----------------------------------------------------
 
 
-type Module
+data Module
   = Module Scope
 
 
-type alias Scope =
-  Dict Name Declaration
+type Scope =
+  Map Name Declaration
 
 
-type Declaration
+data Declaration
   = Value Type Expression
 
 
@@ -38,7 +39,7 @@ type Declaration
 -- Expressions -----------------------------------------------------------------
 
 
-type Expression
+data Expression
   = Atom (Atom Expression)
   | Lambda Parameter Expression
   | Call Expression Expression
@@ -51,61 +52,48 @@ type Expression
 -- Init ------------------------------------------------------------------------
 
 
-empty : Scope
-empty = Dict.empty
+empty :: Scope
+empty = Map.empty
 
 
 
 -- Canonicalise ----------------------------------------------------------------
 
 
-type Error
+data Error
   = Redefinition Name Name
   | Duplication Name
   | Disagreement Name Name
 
 
-canonicalise : Abstract.Module -> Result Error Module
+canonicalise :: Abstract.Module -> Either Error Module
 canonicalise (Abstract.Module scope) =
-  Result.map Module <| doScope scope
+  Module <$> doScope scope
 
 
-doScope : Abstract.Scope -> Result Error Scope
-doScope scope =
-  List.map doDeclaration scope
-    |> Helpers.combine
-    |> Result.map Dict.fromList
+doScope :: Abstract.Scope -> Either Error Scope
+doScope = map doDeclaration >> sequence >> map Map.fromFoldable
 
 
-doDeclaration : Abstract.Declaration -> Result Error ( Name, Declaration )
-doDeclaration (Abstract.Value name1 annot name2 params body) =
-  if name1 == name2 then
-    doBody annot params body
-      |> Result.map (\res -> ( name1, Value annot res ))
-  else
-    Err <| Disagreement name1 name1
+doDeclaration :: Abstract.Declaration -> Either Error { name :: Name, declaration :: Declaration }
+doDeclaration (Abstract.Value name1 annot name2 params body)
+  | name1 == name2 = create <$> doBody annot params body
+    where
+      create res = { name: name1, declaration: Value annot res }
+  | otherwise      = Left $ Disagreement name1 name2
 
 
-doBody : Type -> List Pattern -> Abstract.Expression -> Result Error Expression
+doBody :: Type -> List Pattern -> Abstract.Expression -> Either Error Expression
 doBody annot params body =
   --FIXME: eta-reduct parameters
   doExpression body
 
 
-doExpression : Abstract.Expression -> Result Error Expression
-doExpression expr =
-  case expr of
-    Abstract.Atom atom ->
-      hole doExpression atom
-    Abstract.Lambda locals body ->
-      hole
-    Abstract.Call func args ->
-      hole
-    Abstract.Let scope body ->
-      hole
-    Abstract.Case test alts ->
-      hole
-    Abstract.If test true false ->
-      hole
-    Abstract.Sequence stmts ->
-      hole
+doExpression :: Abstract.Expression -> Either Error Expression
+doExpression (Abstract.Atom atom)          = ?hole doExpression atom
+doExpression (Abstract.Lambda locals body) = ?hole
+doExpression (Abstract.Call func args)     = ?hole
+doExpression (Abstract.Let scope body)     = ?hole
+doExpression (Abstract.Case test alts)     = ?hole
+doExpression (Abstract.If test pos neg)    = ?hole
+doExpression (Abstract.Sequence stmts)     = ?hole
