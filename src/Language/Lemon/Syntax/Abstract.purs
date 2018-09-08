@@ -10,7 +10,6 @@ module Language.Lemon.Syntax.Abstract
 
 import Data.List (List(..))
 
-import Language.Lemon.Name (Name)
 import Language.Lemon.Syntax.Common
 
 

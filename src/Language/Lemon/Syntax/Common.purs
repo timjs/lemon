@@ -8,12 +8,14 @@ module Language.Lemon.Syntax.Common
   , Pattern(..)
   , Statement(..)
   , Type(..)
+  , module Language.Lemon.Name
   ) where
 
 --XXX: Deriving Functor for Statement and Atom would be awesome here.
 
 import Data.List (List)
-import Language.Lemon.Name (Name)
+
+import Language.Lemon.Name
 
 
 

@@ -1,4 +1,4 @@
-# Changes to migrate from Elm to PureScript
+# Migration from Elm to PureScript
 
 
 ## Syntactic
@@ -20,3 +20,14 @@
 - Explicitly import `Data.List (List)`
 - Replace `[]` with `Nil`
 - Replace `withDefault` by `fromMaybe`
+
+
+## Remarks
+
+- New module imports hurt sometimes:
+  - Modules cannot be found
+  - Restarting `purs-ide` doesn't help
+  - => need to build newly installed modules first!
+- `import X.Y.Z (a, b, c) as Z` seems not to bring `Z` into scope like `import X.Y.Z as Z`
+  - => Semantic difference: import specified names under Z and import everything under Z
+  - => Read `import X.Y.Z as Z` as `import X.Y.Z (..) as Z`

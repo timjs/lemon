@@ -5,8 +5,10 @@
   "depends": [
     "console",
     "effect",
+    "either",
     "lists",
     "maybe",
+    "ordered-collections",
     "prelude",
     "psci-support",
     "unicode"
