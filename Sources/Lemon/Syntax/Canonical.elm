@@ -13,9 +13,11 @@ import Helpers
 import Lemon.Name exposing (Name)
 import Lemon.Syntax.Abstract as Abstract
 import Lemon.Syntax.Common exposing (..)
+import Result.Extra as Result
 
 
-hole = Debug.todo ""
+type Hole
+  = Hole
 
 
 
@@ -93,16 +95,33 @@ doExpression : Abstract.Expression -> Result Error Expression
 doExpression expr =
   case expr of
     Abstract.Atom atom ->
-      hole doExpression atom
-    Abstract.Lambda locals body ->
-      hole
+      Result.map Atom <| atom_combine <| atom_map doExpression atom
+    Abstract.Lambda params body ->
+      Result.map2 (List.foldr Lambda)
+        (doExpression expr)
+        (Ok params)
     Abstract.Call func args ->
-      hole
+      Result.map2 (List.foldl Call)
+        (doExpression func)
+        (Result.combine <| List.map doExpression args)
     Abstract.Let scope body ->
-      hole
+      Result.map2 Let
+        (doScope scope)
+        (doExpression body)
     Abstract.Case test alts ->
-      hole
+      Result.map2 Case
+        (doExpression test)
+        (Result.combine <| List.map (tuple_combine << Tuple.mapSecond doExpression) alts)
     Abstract.If test true false ->
-      hole
+      Hole
     Abstract.Sequence stmts ->
-      hole
+      Hole
+
+
+tuple_combine : ( a, Result x b ) -> Result x ( a, b )
+tuple_combine ( a, rb ) =
+  case rb of
+    Ok b ->
+      Ok ( a, b )
+    Err x ->
+      Err x

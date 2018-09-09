@@ -8,15 +8,16 @@ module Lemon.Syntax.Common exposing
   , Pattern(..)
   , Statement(..)
   , Type(..)
+  , atom_combine
+  , atom_foldl
+  , atom_map
   )
 
 --XXX: Deriving Functor for Statement and Atom would be awesome here.
 
 import Lemon.Name exposing (Name)
-
-
-type Hole
-  = Hole
+import List.Extra as List
+import Result.Extra as Result
 
 
 
@@ -46,8 +47,8 @@ type Atom e
   | Record (Fields e)
 
 
-mapAtom : (a -> b) -> Atom a -> Atom b
-mapAtom func atom =
+atom_map : (a -> b) -> Atom a -> Atom b
+atom_map func atom =
   case atom of
     Basic basic ->
       Basic basic
@@ -60,6 +61,37 @@ mapAtom func atom =
       List <| List.map func exprs
     Record fields ->
       Record <| List.map (Tuple.mapSecond func) fields
+
+
+atom_foldl : (e -> a -> a) -> a -> Atom e -> a
+atom_foldl func accum atom =
+  case atom of
+    Some expr ->
+      func expr accum
+    List exprs ->
+      List.foldl func accum exprs
+    Record fields ->
+      List.foldl func accum <| List.map Tuple.second fields
+    other -> accum
+
+
+atom_combine : Atom (Result x e) -> Result x (Atom e)
+atom_combine atom =
+  case atom of
+    Basic basic ->
+      Ok <| Basic basic
+    Variable name ->
+      Ok <| Variable name
+    None -> Ok <| None
+    Some expr ->
+      Result.map Some expr
+    List exprs ->
+      Result.map List <| Result.combine exprs
+    Record fields ->
+      let
+        ( names, values ) = List.unzip fields
+      in
+      Result.map (Record << List.zip names) <| Result.combine values
 
 
 type alias Fields a =
