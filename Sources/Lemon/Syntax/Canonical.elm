@@ -71,10 +71,7 @@ canonicalise (Abstract.Module scope) =
 
 
 doScope : Abstract.Scope -> Result Error Scope
-doScope scope =
-  List.map doDeclaration scope
-    |> Helpers.combine
-    |> Result.map Dict.fromList
+doScope = List.map doDeclaration >> Helpers.combine >> Result.map Dict.fromList
 
 
 doDeclaration : Abstract.Declaration -> Result Error ( Name, Declaration )
@@ -83,7 +80,7 @@ doDeclaration (Abstract.Value name1 annot name2 params body) =
     doBody annot params body
       |> Result.map (\res -> ( name1, Value annot res ))
   else
-    Err <| Disagreement name1 name1
+    Err <| Disagreement name1 name2
 
 
 doBody : Type -> List Pattern -> Abstract.Expression -> Result Error Expression
