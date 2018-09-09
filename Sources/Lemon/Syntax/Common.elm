@@ -15,6 +15,10 @@ module Lemon.Syntax.Common exposing
 import Lemon.Name exposing (Name)
 
 
+type Hole
+  = Hole
+
+
 
 -- Statements ------------------------------------------------------------------
 
@@ -36,10 +40,26 @@ type Statement e
 type Atom e
   = Basic Basic
   | Variable Name
-  | Some e
   | None
+  | Some e
   | List (List e)
   | Record (Fields e)
+
+
+mapAtom : (a -> b) -> Atom a -> Atom b
+mapAtom func atom =
+  case atom of
+    Basic basic ->
+      Basic basic
+    Variable name ->
+      Variable name
+    None -> None
+    Some expr ->
+      Some <| func expr
+    List exprs ->
+      List <| List.map func exprs
+    Record fields ->
+      Record <| List.map (Tuple.mapSecond func) fields
 
 
 type alias Fields a =
