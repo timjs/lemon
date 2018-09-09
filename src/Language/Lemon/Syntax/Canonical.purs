@@ -20,15 +20,20 @@ import Language.Lemon.Syntax.Common
 
 
 
--- Modules and Definitions -----------------------------------------------------
+-- DATA ------------------------------------------------------------------------
 
-
-data Module
-  = Module Scope
+-- DECLARATIONS --
 
 
 type Scope =
   Map Name Declaration
+
+empty :: Scope
+empty = Map.empty
+
+
+data Module
+  = Module Scope
 
 
 data Declaration
@@ -36,7 +41,7 @@ data Declaration
 
 
 
--- Expressions -----------------------------------------------------------------
+-- EXPRESSIONS --
 
 
 data Expression
@@ -49,15 +54,7 @@ data Expression
 
 
 
--- Init ------------------------------------------------------------------------
-
-
-empty :: Scope
-empty = Map.empty
-
-
-
--- Canonicalise ----------------------------------------------------------------
+-- CANONICALISE ----------------------------------------------------------------
 
 
 data Error
@@ -70,29 +67,28 @@ canonicalise :: Abstract.Module -> Either Error Module
 canonicalise (Abstract.Module scope) = Module <$> doScope scope
 
 
+--XXX: why is eta-expansion needed here???
 doScope :: Abstract.Scope -> Either Error Scope
-doScope = map doDeclaration >> sequence >> map Map.fromFoldable
+doScope scope = map doDeclaration scope # sequence # map Map.fromFoldable
 
 
-doDeclaration :: Abstract.Declaration -> Either Error { name :: Name, declaration :: Declaration }
-doDeclaration (Abstract.Value name1 annot name2 params body)
-  | name1 == name2 = create <$> doBody annot params body
-    where
-      create res = { name: name1, declaration: Value annot res }
+doDeclaration :: Abstract.Declaration -> Either Error (Tuple Name Declaration)
+doDeclaration (Abstract.Value name1 typ name2 params body)
+  | name1 == name2 = Tuple name1 << Value typ <$> doBody typ params body
   | otherwise      = Left $ Disagreement name1 name2
 
 
 doBody :: Type -> List Pattern -> Abstract.Expression -> Either Error Expression
-doBody annot params body =
+doBody typ params body =
   --FIXME: eta-reduct parameters
   doExpression body
 
 
 doExpression :: Abstract.Expression -> Either Error Expression
 doExpression (Abstract.Atom atom)          = Atom <$> sequence (map doExpression atom)
-doExpression (Abstract.Lambda locals body) = ?hole
-doExpression (Abstract.Call func args)     = ?hole
-doExpression (Abstract.Let scope body)     = ?hole
-doExpression (Abstract.Case test alts)     = ?hole
+doExpression (Abstract.Lambda params expr) = foldr Lambda <$> doExpression expr <*> pure params
+doExpression (Abstract.Call func args)     = foldl Call <$> doExpression func <*> sequence (map doExpression args)
+doExpression (Abstract.Let scope expr)     = Let <$> doScope scope <*> doExpression expr
+doExpression (Abstract.Case test alts)     = Case <$> doExpression test <*> sequence (map (sequence << map doExpression) alts)
 doExpression (Abstract.If test pos neg)    = ?hole
 doExpression (Abstract.Sequence stmts)     = ?hole

@@ -104,11 +104,11 @@ data Pattern
 
 
 type Parameter =
-  { pattern :: Pattern, type :: Type }
+  Tuple Pattern Type
 
 
 type Alternative e =
-  { pattern :: Pattern, body :: e }
+  Tuple Pattern e
 
 
 
