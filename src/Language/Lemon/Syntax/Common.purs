@@ -11,9 +11,11 @@ module Language.Lemon.Syntax.Common
   , module Language.Lemon.Name
   ) where
 
---XXX: Deriving Functor for Statement and Atom would be awesome here.
+
+import Basics
 
 import Data.List (List)
+import Data.List as List
 
 import Language.Lemon.Name
 
@@ -31,22 +33,52 @@ data Statement e
   | When (List { predicate :: e, body :: List (Statement e) })
   | Done
 
+derive instance statementFunctor :: Functor Statement
+
 
 
 -- Atoms -----------------------------------------------------------------------
 
 
+type Fields a =
+  List (Tuple Name a)
+
+
 data Atom e
   = Basic Basic
   | Variable Name
-  | Some e
   | None
+  | Some e
   | List (List e)
   | Record (Fields e)
 
+derive instance atomFunctor :: Functor Atom
 
-type Fields a =
-  List { name :: Name, value :: a }
+
+instance atomFoldable :: Foldable Atom where
+
+  foldl f x (Some e)    = f x e
+  foldl f x (List es)   = foldl f x es
+  foldl f x (Record fs) = foldl f x $ map snd fs
+  foldl _ x _           = x
+
+  foldr f = foldrDefault f
+
+  foldMap f = foldMapDefaultL f
+
+
+instance atomTraversable :: Traversable Atom where
+
+  sequence (Basic b)    = pure $ Basic b
+  sequence (Variable x) = pure $ Variable x
+  sequence (None)       = pure $ None
+  sequence (Some e)     = Some <$> e
+  sequence (List es)    = List <$> sequence es
+  sequence (Record fs)  = Record << List.zip names <$> sequence values
+    where
+      (Tuple names values) = List.unzip fs
+
+  traverse = traverseDefault
 
 
 data Basic

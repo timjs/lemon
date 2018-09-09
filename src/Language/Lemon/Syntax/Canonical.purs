@@ -67,8 +67,7 @@ data Error
 
 
 canonicalise :: Abstract.Module -> Either Error Module
-canonicalise (Abstract.Module scope) =
-  Module <$> doScope scope
+canonicalise (Abstract.Module scope) = Module <$> doScope scope
 
 
 doScope :: Abstract.Scope -> Either Error Scope
@@ -90,7 +89,7 @@ doBody annot params body =
 
 
 doExpression :: Abstract.Expression -> Either Error Expression
-doExpression (Abstract.Atom atom)          = ?hole doExpression atom
+doExpression (Abstract.Atom atom)          = Atom <$> sequence (map doExpression atom)
 doExpression (Abstract.Lambda locals body) = ?hole
 doExpression (Abstract.Call func args)     = ?hole
 doExpression (Abstract.Let scope body)     = ?hole

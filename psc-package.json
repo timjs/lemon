@@ -11,6 +11,7 @@
     "ordered-collections",
     "prelude",
     "psci-support",
+    "tuples",
     "unicode"
   ]
 }

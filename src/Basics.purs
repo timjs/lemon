@@ -10,10 +10,12 @@ import Prelude
 
 import Control.Alternative as Reexport
 
-import Data.Maybe as Reexport
 import Data.Either as Reexport
+import Data.Functor as Reexport
 import Data.Foldable as Reexport
+import Data.Maybe as Reexport
 import Data.Traversable as Reexport
+import Data.Tuple as Reexport
 
 
 import Control.Semigroupoid (composeFlipped)
