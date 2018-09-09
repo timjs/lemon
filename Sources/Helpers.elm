@@ -1,7 +1,12 @@
 module Helpers exposing (combine)
 
--- Results ---------------------------------------------------------------------
+-- Tuples ----------------------------------------------------------------------
 
 
-combine : List (Result x a) -> Result x (List a)
-combine = List.foldr (Result.map2 (::)) (Ok [])
+combine : ( a, Result x b ) -> Result x ( a, b )
+combine ( a, rb ) =
+  case rb of
+    Ok b ->
+      Ok ( a, b )
+    Err x ->
+      Err x

@@ -10,6 +10,7 @@ module Lemon.Syntax.Abstract exposing
 
 import Lemon.Name exposing (Name)
 import Lemon.Syntax.Common exposing (..)
+import Lemon.Syntax.Common.Atom exposing (..)
 
 
 

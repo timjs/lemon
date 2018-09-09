@@ -9,10 +9,11 @@ module Lemon.Syntax.Canonical exposing
   )
 
 import Dict exposing (Dict)
-import Helpers
+import Helpers as Tuple
 import Lemon.Name exposing (Name)
 import Lemon.Syntax.Abstract as Abstract
 import Lemon.Syntax.Common exposing (..)
+import Lemon.Syntax.Common.Atom as Atom exposing (Atom)
 import Result.Extra as Result
 
 
@@ -73,7 +74,7 @@ canonicalise (Abstract.Module scope) =
 
 
 doScope : Abstract.Scope -> Result Error Scope
-doScope = List.map doDeclaration >> Helpers.combine >> Result.map Dict.fromList
+doScope = List.map doDeclaration >> Result.combine >> Result.map Dict.fromList
 
 
 doDeclaration : Abstract.Declaration -> Result Error ( Name, Declaration )
@@ -95,7 +96,7 @@ doExpression : Abstract.Expression -> Result Error Expression
 doExpression expr =
   case expr of
     Abstract.Atom atom ->
-      Result.map Atom <| atom_combine <| atom_map doExpression atom
+      Result.map Atom <| Atom.combine <| Atom.map doExpression atom
     Abstract.Lambda params body ->
       Result.map2 (List.foldr Lambda)
         (doExpression expr)
@@ -111,17 +112,8 @@ doExpression expr =
     Abstract.Case test alts ->
       Result.map2 Case
         (doExpression test)
-        (Result.combine <| List.map (tuple_combine << Tuple.mapSecond doExpression) alts)
+        (Result.combine <| List.map (Tuple.combine << Tuple.mapSecond doExpression) alts)
     Abstract.If test true false ->
       Hole
     Abstract.Sequence stmts ->
       Hole
-
-
-tuple_combine : ( a, Result x b ) -> Result x ( a, b )
-tuple_combine ( a, rb ) =
-  case rb of
-    Ok b ->
-      Ok ( a, b )
-    Err x ->
-      Err x
