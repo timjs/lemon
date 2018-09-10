@@ -1,8 +1,9 @@
 module Basics
   ( module Prelude
   , module Reexport
+  , neutral
   , (<<), (>>)
-  -- , (<|), (|>)
+  , (:)
   ) where
 
 
@@ -17,13 +18,16 @@ import Data.Maybe as Reexport
 import Data.Traversable as Reexport
 import Data.Tuple as Reexport
 
-
 import Control.Semigroupoid (composeFlipped)
--- import Data.Function (applyFlipped)
 
+
+
+-- EXTRAS ----------------------------------------------------------------------
 
 infixr 9 compose as <<
 infixr 9 composeFlipped as >>
 
--- infixr 0 apply as <|
--- infixl 1 applyFlipped as |>
+infixr 6 Reexport.Tuple as :
+
+neutral :: forall m. Monoid m => m
+neutral = mempty
