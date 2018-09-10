@@ -6,6 +6,7 @@ module Language.Lemon.Syntax.Abstract
   , empty
   ) where
 
+
 --XXX: Actually we would like to re-export the Syntax.Common module...
 
 import Data.List (List(..))
@@ -14,15 +15,18 @@ import Language.Lemon.Syntax.Common
 
 
 
--- Modules and Definitions -----------------------------------------------------
+-- DECLARATIONS ----------------------------------------------------------------
+
+
+type Scope = List Declaration
+
+
+empty :: Scope
+empty = Nil
 
 
 data Module
   = Module Scope
-
-
-type Scope =
-  List Declaration
 
 
 data Declaration
@@ -30,7 +34,7 @@ data Declaration
 
 
 
--- Expressions -----------------------------------------------------------------
+-- EXPRESSIONS -----------------------------------------------------------------
 
 
 data Expression
@@ -41,11 +45,3 @@ data Expression
   | Case Expression (List (Alternative Expression))
   | If Expression Expression Expression
   | Sequence (List (Statement Expression))
-
-
-
--- Init ------------------------------------------------------------------------
-
-
-empty :: Scope
-empty = Nil
