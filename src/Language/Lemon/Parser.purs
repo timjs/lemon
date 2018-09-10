@@ -1,32 +1,24 @@
 module Language.Lemon.Parser
-  ( toplevel
+  ( module_
   ) where
 
 
 import Basics hiding (between)
 
-import Control.Lazy (defer)
-
 import Data.Array as Array
-import Data.Char.Unicode as Char
 import Data.Int as Int
 import Data.List (List(..))
-import Data.List as List
 import Data.List.NonEmpty as NonEmpty
-import Data.Set (Set)
-import Data.Set as Set
 import Data.String.CodeUnits as String
 import Data.Number as Number
 
-import Text.Parsing.StringParser
-import Text.Parsing.StringParser.String
-import Text.Parsing.StringParser.Combinators
+import Text.Parsing.StringParser (Parser, fail, try)
+import Text.Parsing.StringParser.String (anyChar, anyDigit, anyLetter, char, eof, lowerCaseChar, skipSpaces, string, upperCaseChar)
+import Text.Parsing.StringParser.Combinators (between, choice, fix, many, many1, manyTill, option, sepBy)
 
-import Language.Lemon.Name (Name)
-import Language.Lemon.Syntax.Abstract
-import Language.Lemon.Syntax.Common
+import Language.Lemon.Syntax.Abstract (Declaration(..), Expression(..), Module(..), Scope)
+import Language.Lemon.Syntax.Common (Alternative, Atom(..), Basic(..), BasicType(..), Fields, Name, Parameter, Pattern(..), Statement(..), Type(..))
 
-toplevel = module_
 
 
 -- MODULES ---------------------------------------------------------------------
@@ -39,50 +31,51 @@ module_ =
 
 
 scope :: Parser Scope
-scope = by semicolon declaration
+scope = fix \self ->
+  by semicolon (declaration self)
 
 
-declaration :: Parser Declaration
-declaration =
+declaration :: Parser Scope -> Parser Declaration
+declaration inner =
   Value
     <$> lower <* colon
     <*> type_ <* semicolon
     <*> lower <* spaces
     <*> by spaces pattern <* equals
-    <*> expression
+    <*> expression inner
 
 
 
 -- EXPRESSIONS -----------------------------------------------------------------
 
 
-expression :: Parser Expression
-expression =
+expression :: Parser Scope -> Parser Expression
+expression inner = fix \self ->
   choice
     [ Atom
-        <$> atom
+        <$> atom self
     , Lambda <$ char '\\' <* spaces
         <*> by spaces parameter <* arrow
-        <*> lazy (\_ -> expression)
+        <*> self
     , Let <$ keyword "let" <* spaces
-        <*> lazy (\_ -> scope) <* spaces <* keyword "in" <* spaces
-        <*> lazy (\_ -> expression)
+        <*> inner <* spaces <* keyword "in" <* spaces
+        <*> self
     , Case <$ keyword "case" <* spaces
-        <*> lazy (\_ -> expression) <* spaces <* keyword "of" <* spaces
-        <*> by semicolon alternative
+        <*> self <* spaces <* keyword "of" <* spaces
+        <*> by semicolon (alternative self)
     , If <$ keyword "if" <* spaces
-        <*> lazy (\_ -> expression) <* spaces <* keyword "then" <* spaces
-        <*> lazy (\_ -> expression) <* spaces <* keyword "else" <* spaces
-        <*> lazy (\_ -> expression)
+        <*> self <* spaces <* keyword "then" <* spaces
+        <*> self <* spaces <* keyword "else" <* spaces
+        <*> self
     , Sequence <$ keyword "do" <* spaces
-        <*> by semicolon statement
-    , parens (lazy (\_ -> expression))
+        <*> by semicolon (statement self)
+    , parens self
     ]
-    >>= maybeCall
+    >>= maybeCall self
   where
-    maybeCall expr =
+    maybeCall self expr =
       choice
-        [ Call expr <$ try spaces <*> by spaces expression
+        [ Call expr <$ try spaces <*> by spaces self
         , pure expr
         ]
 
@@ -94,54 +87,54 @@ parameter =
     <*> type_
 
 
-alternative :: Parser (Alternative Expression)
-alternative =
+alternative :: Parser Expression -> Parser (Alternative Expression)
+alternative inner =
   Tuple
     <$> pattern <* arrow
-    <*> lazy (\_ -> expression)
+    <*> inner
 
 
-statement :: Parser (Statement Expression)
-statement =
+statement :: Parser Expression -> Parser (Statement Expression)
+statement inner =
   choice
     [ Set <$ keyword "let" <* spaces
         <*> pattern <* equals
-        <*> lazy (\_ -> expression)
+        <*> inner
     , (\x xs -> Par (Cons x xs)) <$ keyword "do" <* spaces
-        <*> by semicolon (lazy (\_ -> statement))
-        <*> by spaces (keyword "also" *> spaces *> by semicolon (lazy (\_ -> statement)))
+        <*> by semicolon (statement inner)
+        <*> by spaces (keyword "also" *> spaces *> by semicolon (statement inner))
     , map On $
         by spaces $
           { action: _, predicate: _, body: _ } <$ keyword "on" <* spaces
-            <*> doublequotedString <* spaces <* keyword "when" <* spaces
-            <*> lazy (\_ -> expression) <* spaces <* keyword "do" <* spaces
-            <*> by semicolon (lazy (\_ -> statement))
+            <*> doublequoted <* spaces <* keyword "when" <* spaces
+            <*> inner <* spaces <* keyword "do" <* spaces
+            <*> by semicolon (statement inner)
     , map When $
         by spaces $
           { predicate: _, body: _ } <$ keyword "when" <* spaces
-            <*> lazy (\_ -> expression) <* spaces <* keyword "do" <* spaces
-            <*> by semicolon (lazy (\_ -> statement))
+            <*> inner <* spaces <* keyword "do" <* spaces
+            <*> by semicolon (statement inner)
     , Done <$ keyword "done"
     , Bind
         <$> pattern <* arrow
-        <*> lazy (\_ -> expression)
+        <*> inner
     , Do
-        <$> lazy (\_ -> expression)
+        <$> inner
     ]
 
 
 -- ATOMS -----------------------------------------------------------------------
 
 
-atom :: Parser (Atom Expression)
-atom =
+atom :: Parser Expression -> Parser (Atom Expression)
+atom inner =
   choice
     [ Basic <$> basic
     , Variable <$> lower
-    , Some <$ keyword "Some" <* spaces <*> lazy (\_ -> expression)
+    , Some <$ keyword "Some" <* spaces <*> inner
     , None <$ keyword "None"
-    , List <$> list (lazy (\_ -> expression))
-    , Record <$> record colon (lazy (\_ -> expression))
+    , List <$> list inner
+    , Record <$> record colon inner
     ]
 
 
@@ -152,7 +145,7 @@ basic =
     , Bool false <$ keyword "False"
     , Int <$> try int --NOTE: ints are like floats, we need to backtrack here
     , Float <$> float
-    , String <$> doublequotedString
+    , String <$> doublequoted
     ]
 
 
@@ -179,8 +172,9 @@ float = negate <$ char '-' <*> float' <|> float'
         Just n -> pure n
 
 
-doublequotedString :: Parser String
-doublequotedString = fromChars <$ char '"' <*> manyTill anyChar (char '"')
+--FIXME: Does this eat the '"' or not?
+doublequoted :: Parser String
+doublequoted = fromChars <$ char '"' <*> manyTill anyChar (char '"')
 
 
 list :: forall a. Parser a -> Parser (List a)
@@ -198,22 +192,22 @@ record sep item = between (char '{' <* spaces) (spaces *> char '}') $ by comma e
 
 
 pattern :: Parser Pattern
-pattern =
+pattern = fix \self ->
   choice
     [ PBasic <$> basic
     , PVariable <$> lower
-    , PSome <$ keyword "Some" <* spaces <*> lazy (\_ -> pattern)
+    , PSome <$ keyword "Some" <* spaces <*> self
     , PNone <$ keyword "None"
     , PNil <$ string "[]"
-    , PRecord <$> record equals (lazy (\_ -> pattern))
+    , PRecord <$> record equals self
     , PIgnore <$ char '_'
-    , parens (lazy (\_ -> pattern))
+    , parens self
     ]
-    >>= maybeCons
+    >>= maybeCons self
   where
-    maybeCons left =
+    maybeCons self left =
       choice
-        [ PCons left <$ try doublecolon <*> pattern
+        [ PCons left <$ try doublecolon <*> self
         , pure left
         ]
 
@@ -223,21 +217,21 @@ pattern =
 
 
 type_ :: Parser Type
-type_ =
+type_ = fix \self ->
   choice
     [ TBasic <$> basicType
     , TVariable <$> universal
-    , TOption <$ keyword "option" <* spaces <*> lazy (\_ -> type_)
-    , TList <$ keyword "list" <* spaces <*> lazy (\_ -> type_)
-    , TRecord <$> record colon (lazy (\_ -> type_))
-    , TTask <$ keyword "task" <* spaces <*> lazy (\_ -> type_)
-    , identity <$> parens (lazy (\_ -> type_))
+    , TOption <$ keyword "option" <* spaces <*> self
+    , TList <$ keyword "list" <* spaces <*> self
+    , TRecord <$> record colon self
+    , TTask <$ keyword "task" <* spaces <*> self
+    , parens self
     ]
-    >>= maybeArrow
+    >>= maybeArrow self
   where
-    maybeArrow left =
+    maybeArrow self left =
       choice
-        [ TArrow left <$ try arrow <*> type_
+        [ TArrow left <$ try arrow <*> self
         , pure left
         ]
 
@@ -256,11 +250,32 @@ basicType =
 -- HELPERS ---------------------------------------------------------------------
 
 
+by :: forall s a. Parser s -> Parser a -> Parser (List a)
+by = flip sepBy
+
+
+parens :: forall a. Parser a -> Parser a
+parens = between (char '(') (char ')')
+
+
+keyword :: String -> Parser String
+keyword = string
+
+
+fromChars :: forall f. Foldable f => f Char -> String
+fromChars = String.fromCharArray << Array.fromFoldable
+
+
+anyNameChar :: Parser Char
+anyNameChar = anyLetter <|> char '_'
+
+
+
 -- SPACES --
 
 
+spaces :: Parser Unit
 spaces = skipSpaces
-
 
 
 -- SYMBOLS --
@@ -269,12 +284,27 @@ spaces = skipSpaces
 spacy :: forall a. Parser a -> Parser Unit
 spacy item = void $ spaces <* item <* spaces
 
-comma      = spacy $ char ','
-semicolon  = spacy $ char ';'
-colon      = spacy $ char ':'
-equals     = spacy $ char '='
 
-arrow       = spacy $ string "->"
+comma :: Parser Unit
+comma = spacy $ char ','
+
+
+semicolon :: Parser Unit
+semicolon = spacy $ char ';'
+
+colon :: Parser Unit
+colon = spacy $ char ':'
+
+
+equals :: Parser Unit
+equals = spacy $ char '='
+
+
+arrow :: Parser Unit
+arrow = spacy $ string "->"
+
+
+doublecolon :: Parser Unit
 doublecolon = spacy $ string "::"
 
 
@@ -282,23 +312,23 @@ doublecolon = spacy $ string "::"
 -- NAMES --
 
 
-keywords :: Set String
-keywords =
-  Set.fromFoldable
-    [ "type"
-    , "let"
-    , "in"
-    , "case"
-    , "of"
-    , "if"
-    , "then"
-    , "else"
-    , "do"
-    , "also"
-    , "on"
-    , "when"
-    , "done"
-    ]
+-- keywords :: Set String
+-- keywords =
+--   Set.fromFoldable
+--     [ "type"
+--     , "let"
+--     , "in"
+--     , "case"
+--     , "of"
+--     , "if"
+--     , "then"
+--     , "else"
+--     , "do"
+--     , "also"
+--     , "on"
+--     , "when"
+--     , "done"
+--     ]
 
 
 --FIXME: check for keywords?
@@ -318,28 +348,3 @@ upper = name upperCaseChar
 
 universal :: Parser Name
 universal = char '\'' *> lower
-
-
-
--- TODO --
-
-by = flip sepBy
-
-variable = string
-keyword = string
-symbol = string
-token = string
-
-lazy = defer
-
-parens = between (char '(') (char ')')
-
-
-
--- NEW HELPERS --
-
-
-fromChars = String.fromCharArray << Array.fromFoldable
-
-
-anyNameChar = anyLetter <|> char '_'
