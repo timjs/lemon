@@ -31,8 +31,6 @@ data Statement e
   | Par (List (List (Statement e)))
   | On (List { action :: Name, predicate :: e, body :: List (Statement e) })
   | When (List { predicate :: e, body :: List (Statement e) })
-  -- | On (List (Name /\ e /\ List (Statement e)))
-  -- | When (List (e /\ List (Statement e)))
   | Done
 
 derive instance statementFunctor :: Functor Statement
@@ -93,6 +91,7 @@ sequenceWhen { predicate: e, body: es } = ado
 -- ATOMS -----------------------------------------------------------------------
 
 
+--FIXME: Use record again
 type Fields a = List (Tuple Name a)
 
 

@@ -6,11 +6,14 @@
     "console",
     "effect",
     "either",
+    "integers",
     "lists",
     "maybe",
+    "numbers",
     "ordered-collections",
     "prelude",
     "psci-support",
+    "string-parsers",
     "tuples",
     "unicode"
   ]
