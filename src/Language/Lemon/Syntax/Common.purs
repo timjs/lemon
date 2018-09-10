@@ -92,7 +92,7 @@ sequenceWhen { predicate: e, body: es } = ado
 
 
 --FIXME: Use record again
-type Fields a = List (Tuple Name a)
+type Fields a = List { name :: Name, value :: a }
 
 
 data Atom e
@@ -109,7 +109,7 @@ derive instance atomFunctor :: Functor Atom
 instance atomFoldable :: Foldable Atom where
   foldMap f (Some e)    = f e
   foldMap f (List es)   = foldMap f es
-  foldMap f (Record fs) = foldMap f $ map snd fs
+  foldMap f (Record fs) = foldMap f $ map _.value fs
   foldMap f _           = neutral
 
   foldl f = foldlDefault f
@@ -123,9 +123,10 @@ instance atomTraversable :: Traversable Atom where
   sequence (None)       = pure $ None
   sequence (Some e)     = Some <$> e
   sequence (List es)    = List <$> sequence es
-  sequence (Record fs)  = Record << List.zip names <$> sequence values
+  sequence (Record fs)  = Record << List.zipWith { name: _, value: _ } names <$> sequence values
     where
-      (Tuple names values) = List.unzip fs
+      names = map _.name fs
+      values = map _.value fs
 
   traverse = traverseDefault
 

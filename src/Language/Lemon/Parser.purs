@@ -184,7 +184,7 @@ list item = between (char '[' <* spaces) (spaces *> char ']') $ by comma item
 record :: forall a. Parser Unit -> Parser a -> Parser (Fields a)
 record sep item = between (char '{' <* spaces) (spaces *> char '}') $ by comma entry
   where
-    entry = Tuple <$> lower <* spaces <* sep <*> item
+    entry = { name: _, value: _ } <$> lower <* spaces <* sep <*> item
 
 
 
