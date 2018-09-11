@@ -99,7 +99,7 @@ doExpression expr =
       Result.map Atom <| Atom.combine <| Atom.map doExpression atom
     Abstract.Lambda params body ->
       Result.map2 (List.foldr Lambda)
-        (doExpression expr)
+        (doExpression body)
         (Ok params)
     Abstract.Call func args ->
       Result.map2 (List.foldl Call)
