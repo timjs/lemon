@@ -9,9 +9,11 @@ module Language.Lemon.Syntax.Abstract
 
 --XXX: Actually we would like to re-export the Syntax.Common module...
 
+import Basics
+
 import Data.List (List(..))
 
-import Language.Lemon.Syntax.Common
+import Language.Lemon.Syntax.Common (Alternative, Atom, Name, Parameter, Pattern, Statement, Type)
 
 
 
@@ -28,15 +30,28 @@ empty = Nil
 data Module
   = Module Scope
 
+derive instance genericModule :: Generic Module _
+
+
+instance showModule :: Show Module where
+  show = genericShow
+
 
 data Declaration
   = Value Name Type Name (List Pattern) Expression
+
+derive instance genericDeclaration :: Generic Declaration _
+
+
+instance showDeclaration :: Show Declaration where
+  show x = genericShow x
 
 
 
 -- EXPRESSIONS -----------------------------------------------------------------
 
 
+--FIXME: Define as fixpoint over itself?
 data Expression
   = Atom (Atom Expression)
   | Lambda (List Parameter) Expression
@@ -45,3 +60,9 @@ data Expression
   | Case Expression (List (Alternative Expression))
   | If Expression Expression Expression
   | Sequence (List (Statement Expression))
+
+derive instance genericExpression :: Generic Expression _
+
+
+instance showExpression :: Show Expression where
+  show x = genericShow x

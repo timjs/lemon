@@ -18,6 +18,10 @@ import Data.Maybe as Reexport
 import Data.Traversable as Reexport
 import Data.Tuple as Reexport
 
+import Data.Show (class Show) as Reexport
+import Data.Generic.Rep (class Generic) as Reexport
+import Data.Generic.Rep.Show (genericShow) as Reexport
+
 import Control.Semigroupoid (composeFlipped)
 
 

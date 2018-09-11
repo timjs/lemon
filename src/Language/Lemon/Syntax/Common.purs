@@ -33,10 +33,15 @@ data Statement e
   | When (List { predicate :: e, body :: List (Statement e) })
   | Done
 
-derive instance statementFunctor :: Functor Statement
+derive instance genericStatement :: Generic (Statement e) _
+derive instance functorStatement :: Functor Statement
 
 
-instance statementFoldable :: Foldable Statement where
+instance showStatement :: Show e => Show (Statement e) where
+  show = genericShow
+
+
+instance foldableStatement :: Foldable Statement where
   foldMap f (Set _ e)  = f e
   foldMap f (Bind _ e) = f e
   foldMap f (Do e)     = f e
@@ -50,7 +55,7 @@ instance statementFoldable :: Foldable Statement where
   foldr f = foldrDefault f
 
 
-instance statementTraversable :: Traversable Statement where
+instance traversableStatement :: Traversable Statement where
   sequence (Set p e)  = Set p <$> e
   sequence (Bind p e) = Bind p <$> e
   sequence (Do e)     = Do <$> e
@@ -91,7 +96,6 @@ sequenceWhen { predicate: e, body: es } = ado
 -- ATOMS -----------------------------------------------------------------------
 
 
---FIXME: Use record again
 type Fields a = List { name :: Name, value :: a }
 
 
@@ -103,10 +107,15 @@ data Atom e
   | List (List e)
   | Record (Fields e)
 
-derive instance atomFunctor :: Functor Atom
+derive instance genericAtom :: Generic (Atom e) _
+derive instance functorAtom :: Functor Atom
 
 
-instance atomFoldable :: Foldable Atom where
+instance showAtom :: Show e => Show (Atom e) where
+  show = genericShow
+
+
+instance foldableAtom :: Foldable Atom where
   foldMap f (Some e)    = f e
   foldMap f (List es)   = foldMap f es
   foldMap f (Record fs) = foldMap f $ map _.value fs
@@ -117,7 +126,7 @@ instance atomFoldable :: Foldable Atom where
   foldr f = foldrDefault f
 
 
-instance atomTraversable :: Traversable Atom where
+instance traversableAtom :: Traversable Atom where
   sequence (Basic b)    = pure $ Basic b
   sequence (Variable x) = pure $ Variable x
   sequence (None)       = pure $ None
@@ -137,6 +146,12 @@ data Basic
   | Float Number
   | String String
 
+derive instance genericBasic :: Generic Basic _
+
+
+instance showBasic :: Show Basic where
+  show = genericShow
+
 
 
 -- PATTERNS --------------------------------------------------------------------
@@ -151,6 +166,12 @@ data Pattern
   | PNil
   | PRecord (Fields Pattern)
   | PIgnore
+
+derive instance genericPattern :: Generic Pattern _
+
+
+instance showPattern :: Show Pattern where
+  show x = genericShow x
 
 
 type Parameter = Tuple Pattern Type
@@ -172,9 +193,21 @@ data Type
   | TTask Type
   | TArrow Type Type
 
+derive instance typeGeneric :: Generic Type _
+
+
+instance showType :: Show Type where
+  show x = genericShow x
+
 
 data BasicType
   = TBool
   | TInt
   | TFloat
   | TString
+
+derive instance genericBasicType :: Generic BasicType _
+
+
+instance showBasicType :: Show BasicType where
+  show = genericShow
