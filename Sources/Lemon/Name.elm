@@ -1,8 +1,17 @@
-module Lemon.Name exposing (Name, isLower, isUpper)
+module Lemon.Name exposing
+  ( Fields
+  , Name
+  , isLower
+  , isUpper
+  )
 
 
 type alias Name =
   String
+
+
+type alias Fields a =
+  List ( Name, a )
 
 
 checkFirst : (Char -> Bool) -> String -> Bool

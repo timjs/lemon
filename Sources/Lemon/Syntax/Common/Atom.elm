@@ -1,13 +1,13 @@
 module Lemon.Syntax.Common.Atom exposing
   ( Atom(..)
   , Basic(..)
-  , Fields
   , combine
   , foldl
   , map
   )
 
-import Lemon.Name exposing (Name)
+import Helpers.List as List
+import Lemon.Name exposing (..)
 import List.Extra as List
 import Result.Extra as Result
 
@@ -26,10 +26,6 @@ type Basic
   | Int Int
   | Float Float
   | String String
-
-
-type alias Fields a =
-  List ( Name, a )
 
 
 map : (a -> b) -> Atom a -> Atom b
@@ -71,9 +67,9 @@ combine atom =
     Some expr ->
       Result.map Some expr
     List exprs ->
-      Result.map List <| Result.combine exprs
+      Result.map List <| List.combine exprs
     Record fields ->
       let
         ( names, values ) = List.unzip fields
       in
-      Result.map (Record << List.zip names) <| Result.combine values
+      Result.map (Record << List.zip names) <| List.combine values

@@ -9,8 +9,10 @@ module Lemon.Syntax.Abstract exposing
 --XXX: Actually we would like to re-export the Syntax.Common module...
 
 import Lemon.Name exposing (Name)
-import Lemon.Syntax.Common exposing (..)
 import Lemon.Syntax.Common.Atom exposing (..)
+import Lemon.Syntax.Common.Pattern exposing (..)
+import Lemon.Syntax.Common.Statement exposing (..)
+import Lemon.Syntax.Common.Type exposing (..)
 
 
 

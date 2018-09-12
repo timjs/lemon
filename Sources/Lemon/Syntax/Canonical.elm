@@ -13,8 +13,10 @@ import Helpers.List as List
 import Helpers.Tuple as Tuple
 import Lemon.Name exposing (Name)
 import Lemon.Syntax.Abstract as Abstract
-import Lemon.Syntax.Common exposing (..)
-import Lemon.Syntax.Common.Atom as Atom exposing (..)
+import Lemon.Syntax.Common.Atom as Atom exposing (Atom(..), Basic(..))
+import Lemon.Syntax.Common.Pattern exposing (Alternative, Parameter, Pattern(..))
+import Lemon.Syntax.Common.Statement exposing (Statement)
+import Lemon.Syntax.Common.Type exposing (Type(..))
 import Result.Extra as Result
 
 
