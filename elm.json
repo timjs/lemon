@@ -13,7 +13,8 @@
             "elm/parser": "1.1.0",
             "elm-community/list-extra": "8.0.0",
             "elm-community/result-extra": "2.2.1",
-            "pilatch/flip": "1.0.0"
+            "pilatch/flip": "1.0.0",
+            "the-sett/elm-pretty-printer": "2.0.0"
         },
         "indirect": {
             "elm/json": "1.0.0",
