@@ -15,13 +15,9 @@ import Lemon.Name exposing (Name)
 import Lemon.Syntax.Abstract as Abstract
 import Lemon.Syntax.Common.Atom as Atom exposing (Atom(..), Basic(..))
 import Lemon.Syntax.Common.Pattern exposing (Alternative, Parameter, Pattern(..))
-import Lemon.Syntax.Common.Statement exposing (Statement)
+import Lemon.Syntax.Common.Statement as Statement exposing (Statement)
 import Lemon.Syntax.Common.Type exposing (Type(..))
 import Result.Extra as Result
-
-
-type Hole
-  = Hole
 
 
 
@@ -142,14 +138,4 @@ doExpression expr =
         (doExpression false)
     Abstract.Sequence stmts ->
       Result.map Sequence
-        (List.combine <| List.map (statement_combine << statement_map doExpression) stmts)
-
-
-statement_combine : Statement (Result x e) -> Result x (Statement e)
-statement_combine stmt =
-  Hole
-
-
-statement_map : (a -> b) -> Statement a -> Statement b
-statement_map function aStatement =
-  Hole
+        (List.combine <| List.map (Statement.combine << Statement.map doExpression) stmts)
