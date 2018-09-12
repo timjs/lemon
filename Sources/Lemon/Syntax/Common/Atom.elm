@@ -20,6 +20,7 @@ type Atom e
   = ABasic Basic
   | AVariable Name
   | AConstructor Name (List e)
+    --TODO: Canonicalise fields to Dict or do it in the parser...
   | ARecord (Fields e)
 
 

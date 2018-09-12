@@ -21,7 +21,7 @@ import Result.Extra as Result
 
 
 
--- Modules and Definitions -----------------------------------------------------
+-- Modules and declarations ----------------------------------------------------
 
 
 type Module
