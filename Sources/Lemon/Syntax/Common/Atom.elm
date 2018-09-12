@@ -2,8 +2,12 @@ module Lemon.Syntax.Common.Atom exposing
   ( Atom(..)
   , Basic(..)
   , combine
+  , cons
+  , end
   , foldl
+  , just
   , map
+  , nothing
   )
 
 import Helpers.List as List
@@ -15,11 +19,26 @@ import Result.Extra as Result
 type Atom e
   = ABasic Basic
   | AVariable Name
-  | AJust e
-  | ANothing
-  | ACons e e
-  | AEnd
+  | AConstructor Name (List e)
   | ARecord (Fields e)
+
+
+just : e -> Atom e
+just x =
+  AConstructor "Just" [ x ]
+
+
+nothing : Atom e
+nothing = AConstructor "Nothing" []
+
+
+cons : e -> e -> Atom e
+cons head tail =
+  AConstructor "Cons" [ head, tail ]
+
+
+end : Atom e
+end = AConstructor "End" []
 
 
 type Basic
@@ -36,12 +55,8 @@ map func atom =
       ABasic basic
     AVariable name ->
       AVariable name
-    AJust expr ->
-      AJust (func expr)
-    ANothing -> ANothing
-    ACons left right ->
-      ACons (func left) (func right)
-    AEnd -> AEnd
+    AConstructor name exprs ->
+      AConstructor name (List.map func exprs)
     ARecord fields ->
       ARecord <| List.map (Tuple.mapSecond func) fields
 
@@ -53,12 +68,8 @@ foldl func accum atom =
       accum
     AVariable _ ->
       accum
-    AJust expr ->
-      func expr accum
-    ANothing -> accum
-    ACons left right ->
-      List.foldl func accum [ left, right ]
-    AEnd -> accum
+    AConstructor _ exprs ->
+      List.foldl func accum exprs
     ARecord fields ->
       List.foldl func accum <| List.map Tuple.second fields
 
@@ -70,12 +81,8 @@ combine atom =
       Ok <| ABasic basic
     AVariable name ->
       Ok <| AVariable name
-    AJust expr ->
-      Result.map AJust expr
-    ANothing -> Ok <| ANothing
-    ACons left right ->
-      Result.map2 ACons left right
-    AEnd -> Ok <| AEnd
+    AConstructor name exprs ->
+      Result.map (AConstructor name) <| List.combine exprs
     ARecord fields ->
       let
         ( names, values ) = List.unzip fields

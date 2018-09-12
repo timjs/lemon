@@ -12,10 +12,7 @@ import Lemon.Syntax.Common.Type exposing (..)
 type Pattern
   = PBasic Basic
   | PVariable Name
-  | PJust Pattern
-  | PNothing
-  | PCons Pattern Pattern
-  | PEnd
+  | PConstructor Name (List Pattern)
   | PRecord (Fields Pattern)
   | PIgnore
 
