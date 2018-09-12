@@ -9,11 +9,12 @@ module Lemon.Syntax.Canonical exposing
   )
 
 import Dict exposing (Dict)
-import Helpers as Tuple
+import Helpers.List as List
+import Helpers.Tuple as Tuple
 import Lemon.Name exposing (Name)
 import Lemon.Syntax.Abstract as Abstract
 import Lemon.Syntax.Common exposing (..)
-import Lemon.Syntax.Common.Atom as Atom exposing (Atom)
+import Lemon.Syntax.Common.Atom as Atom exposing (..)
 import Result.Extra as Result
 
 
@@ -58,14 +59,21 @@ empty : Scope
 empty = Dict.empty
 
 
+mkIf : Expression -> Expression -> Expression -> Expression
+mkIf test true false =
+  Case test <|
+    [ ( PBasic (Bool True), true )
+    , ( PBasic (Bool False), false )
+    ]
+
+
 
 -- Canonicalise ----------------------------------------------------------------
 
 
 type Error
-  = Redefinition Name Name
-  | Duplication Name
-  | Disagreement Name Name
+  = BadParameters Type (List Pattern)
+  | BadNaming Name Name
 
 
 canonicalise : Abstract.Module -> Result Error Module
@@ -74,29 +82,41 @@ canonicalise (Abstract.Module scope) =
 
 
 doScope : Abstract.Scope -> Result Error Scope
-doScope = List.map doDeclaration >> Result.combine >> Result.map Dict.fromList
+doScope = List.map doDeclaration >> List.combine >> Result.map Dict.fromList
 
 
 doDeclaration : Abstract.Declaration -> Result Error ( Name, Declaration )
-doDeclaration (Abstract.Value name1 annot name2 params body) =
+doDeclaration (Abstract.Value name1 typ name2 params body) =
   if name1 == name2 then
-    doBody annot params body
-      |> Result.map (\res -> ( name1, Value annot res ))
+    doBody typ params body
+      |> Result.map (\res -> ( name1, Value typ res ))
   else
-    Err <| Disagreement name1 name2
+    Err <| BadNaming name1 name2
 
 
 doBody : Type -> List Pattern -> Abstract.Expression -> Result Error Expression
-doBody annot params body =
-  --FIXME: eta-reduct parameters
-  doExpression body
+doBody typ params body =
+  let
+    go arrow patterns expr =
+      case ( typ, patterns ) of
+        ( TArrow this rest, pat :: pats ) ->
+          go rest pats <| Lambda ( pat, this ) expr
+        ( _, pat :: pats ) ->
+          Err <| BadParameters typ params
+        ( TArrow this rest, [] ) ->
+          Err <| BadParameters typ params
+        ( _, [] ) ->
+          Ok expr
+  in
+  doExpression body |> Result.andThen (go typ params)
 
 
 doExpression : Abstract.Expression -> Result Error Expression
 doExpression expr =
   case expr of
     Abstract.Atom atom ->
-      Result.map Atom <| Atom.combine <| Atom.map doExpression atom
+      Result.map Atom
+        (Atom.combine <| Atom.map doExpression atom)
     Abstract.Lambda params body ->
       Result.map2 (List.foldr Lambda)
         (doExpression body)
@@ -104,7 +124,7 @@ doExpression expr =
     Abstract.Call func args ->
       Result.map2 (List.foldl Call)
         (doExpression func)
-        (Result.combine <| List.map doExpression args)
+        (List.combine <| List.map doExpression args)
     Abstract.Let scope body ->
       Result.map2 Let
         (doScope scope)
@@ -112,8 +132,22 @@ doExpression expr =
     Abstract.Case test alts ->
       Result.map2 Case
         (doExpression test)
-        (Result.combine <| List.map (Tuple.combine << Tuple.mapSecond doExpression) alts)
+        (List.combine <| List.map (Tuple.combineSecond << Tuple.mapSecond doExpression) alts)
     Abstract.If test true false ->
-      Hole
+      Result.map3 mkIf
+        (doExpression test)
+        (doExpression true)
+        (doExpression false)
     Abstract.Sequence stmts ->
-      Hole
+      Result.map Sequence
+        (List.combine <| List.map (statement_combine << statement_map doExpression) stmts)
+
+
+statement_combine : Statement (Result x e) -> Result x (Statement e)
+statement_combine stmt =
+  Hole
+
+
+statement_map : (a -> b) -> Statement a -> Statement b
+statement_map function aStatement =
+  Hole
