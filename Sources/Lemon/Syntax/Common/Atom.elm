@@ -17,7 +17,8 @@ type Atom e
   | Variable Name
   | None
   | Some e
-  | List (List e)
+  | Cons e e
+  | End
   | Record (Fields e)
 
 
@@ -37,9 +38,10 @@ map func atom =
       Variable name
     None -> None
     Some expr ->
-      Some <| func expr
-    List exprs ->
-      List <| List.map func exprs
+      Some (func expr)
+    End -> End
+    Cons left right ->
+      Cons (func left) (func right)
     Record fields ->
       Record <| List.map (Tuple.mapSecond func) fields
 
@@ -49,8 +51,8 @@ foldl func accum atom =
   case atom of
     Some expr ->
       func expr accum
-    List exprs ->
-      List.foldl func accum exprs
+    Cons left right ->
+      List.foldl func accum [ left, right ]
     Record fields ->
       List.foldl func accum <| List.map Tuple.second fields
     other -> accum
@@ -66,8 +68,9 @@ combine atom =
     None -> Ok <| None
     Some expr ->
       Result.map Some expr
-    List exprs ->
-      Result.map List <| List.combine exprs
+    End -> Ok <| End
+    Cons left right ->
+      Result.map2 Cons left right
     Record fields ->
       let
         ( names, values ) = List.unzip fields

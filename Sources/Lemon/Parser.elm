@@ -186,12 +186,17 @@ statement =
 
 atom : Parser (Atom Expression)
 atom =
+  let
+    desugar = List.foldr (\e es -> Cons e (Atom es)) End
+  in
   oneOf
     [ succeed Basic |= basic
     , succeed Variable |= lower
     , succeed Some |. keyword "Some" |. spaces |= lazy (\_ -> expression)
     , succeed None |. keyword "None"
-    , succeed List |= list (lazy (\_ -> expression))
+    , succeed Cons |. keyword "Cons" |. spaces |= lazy (\_ -> expression) |. spaces |= lazy (\_ -> expression)
+    , succeed End |. keyword "End"
+    , succeed desugar |= list (lazy (\_ -> expression))
     , succeed Record |= record colon (lazy (\_ -> expression))
     ]
 
