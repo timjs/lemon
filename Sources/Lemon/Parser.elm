@@ -187,17 +187,17 @@ statement =
 atom : Parser (Atom Expression)
 atom =
   let
-    desugar = List.foldr (\e es -> Cons e (Atom es)) End
+    desugar = List.foldr (\e es -> ACons e (Atom es)) AEnd
   in
   oneOf
-    [ succeed Basic |= basic
-    , succeed Variable |= lower
-    , succeed Some |. keyword "Some" |. spaces |= lazy (\_ -> expression)
-    , succeed None |. keyword "None"
-    , succeed Cons |. keyword "Cons" |. spaces |= lazy (\_ -> expression) |. spaces |= lazy (\_ -> expression)
-    , succeed End |. keyword "End"
+    [ succeed ABasic |= basic
+    , succeed AVariable |= lower
+    , succeed AJust |. keyword "Just" |. spaces |= lazy (\_ -> expression)
+    , succeed ANothing |. keyword "Nothing"
+    , succeed ACons |. keyword "Cons" |. spaces |= lazy (\_ -> expression) |. spaces |= lazy (\_ -> expression)
+    , succeed AEnd |. keyword "End"
     , succeed desugar |= list (lazy (\_ -> expression))
-    , succeed Record |= record colon (lazy (\_ -> expression))
+    , succeed ARecord |= record colon (lazy (\_ -> expression))
     ]
 
 
@@ -282,26 +282,17 @@ record sep item =
 
 pattern : Parser Pattern
 pattern =
-  let
-    maybeCons left =
-      oneOf
-        [ succeed (PCons left)
-            |. backtrackable doublecolon
-            |= pattern
-        , succeed left
-        ]
-  in
   oneOf
     [ succeed PBasic |= basic
     , succeed PVariable |= lower
-    , succeed PSome |. keyword "Some" |. spaces |= lazy (\_ -> pattern)
-    , succeed PNone |. keyword "None"
-    , succeed PNil |. doublebracket
+    , succeed PJust |. keyword "Just" |. spaces |= lazy (\_ -> pattern)
+    , succeed PNothing |. keyword "Nothing"
+    , succeed PCons |. keyword "Cons" |. spaces |= lazy (\_ -> pattern) |. spaces |= lazy (\_ -> pattern)
+    , succeed PEnd |. keyword "End"
     , succeed PRecord |= record equals (lazy (\_ -> pattern))
     , succeed PIgnore |. underscore
     , succeed identity |= parens (lazy (\_ -> pattern))
     ]
-    |> andThen maybeCons
 
 
 
@@ -321,11 +312,11 @@ type_ =
   in
   oneOf
     [ succeed TBasic |= basicType
-    , succeed TVariable |= universal
-    , succeed TOption |. keyword "option" |. spaces |= lazy (\_ -> type_)
-    , succeed TList |. keyword "list" |. spaces |= lazy (\_ -> type_)
+    , succeed TVariable |= lower
+    , succeed TMaybe |. keyword "Maybe" |. spaces |= lazy (\_ -> type_)
+    , succeed TList |. keyword "List" |. spaces |= lazy (\_ -> type_)
     , succeed TRecord |= record colon (lazy (\_ -> type_))
-    , succeed TTask |. keyword "task" |. spaces |= lazy (\_ -> type_)
+    , succeed TTask |. keyword "Task" |. spaces |= lazy (\_ -> type_)
     , succeed identity |= parens (lazy (\_ -> type_))
     ]
     |> andThen maybeArrow
@@ -334,10 +325,10 @@ type_ =
 basicType : Parser BasicType
 basicType =
   oneOf
-    [ succeed TBool |. keyword "bool"
-    , succeed TInt |. keyword "int"
-    , succeed TFloat |. keyword "float"
-    , succeed TString |. keyword "string"
+    [ succeed TBool |. keyword "Bool"
+    , succeed TInt |. keyword "Int"
+    , succeed TFloat |. keyword "Float"
+    , succeed TString |. keyword "String"
     ]
 
 
@@ -418,14 +409,6 @@ underscore : Parser ()
 underscore = spacy <| symbol "_"
 
 
-doublecolon : Parser ()
-doublecolon = spacy <| symbol "::"
-
-
-doublebracket : Parser ()
-doublebracket = spacy <| symbol "[]"
-
-
 
 -- Names --
 
@@ -434,6 +417,7 @@ keywords : Set String
 keywords =
   Set.fromList
     [ "type"
+    , "alias"
     , "let"
     , "in"
     , "case"
@@ -464,12 +448,3 @@ lower = name Char.isLower
 
 upper : Parser Name
 upper = name Char.isUpper
-
-
-universal : Parser Name
-universal =
-  variable
-    { start = (==) '\''
-    , inner = Char.isLower
-    , reserved = keywords
-    }

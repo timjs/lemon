@@ -9,7 +9,7 @@ import Lemon.Name exposing (Fields, Name)
 type Type
   = TBasic BasicType
   | TVariable Name
-  | TOption Type
+  | TMaybe Type
   | TList Type
   | TRecord (Fields Type)
   | TTask Type

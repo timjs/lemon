@@ -13,13 +13,13 @@ import Result.Extra as Result
 
 
 type Atom e
-  = Basic Basic
-  | Variable Name
-  | None
-  | Some e
-  | Cons e e
-  | End
-  | Record (Fields e)
+  = ABasic Basic
+  | AVariable Name
+  | AJust e
+  | ANothing
+  | ACons e e
+  | AEnd
+  | ARecord (Fields e)
 
 
 type Basic
@@ -32,47 +32,52 @@ type Basic
 map : (a -> b) -> Atom a -> Atom b
 map func atom =
   case atom of
-    Basic basic ->
-      Basic basic
-    Variable name ->
-      Variable name
-    None -> None
-    Some expr ->
-      Some (func expr)
-    End -> End
-    Cons left right ->
-      Cons (func left) (func right)
-    Record fields ->
-      Record <| List.map (Tuple.mapSecond func) fields
+    ABasic basic ->
+      ABasic basic
+    AVariable name ->
+      AVariable name
+    AJust expr ->
+      AJust (func expr)
+    ANothing -> ANothing
+    ACons left right ->
+      ACons (func left) (func right)
+    AEnd -> AEnd
+    ARecord fields ->
+      ARecord <| List.map (Tuple.mapSecond func) fields
 
 
 foldl : (e -> a -> a) -> a -> Atom e -> a
 foldl func accum atom =
   case atom of
-    Some expr ->
+    ABasic _ ->
+      accum
+    AVariable _ ->
+      accum
+    AJust expr ->
       func expr accum
-    Cons left right ->
+    ANothing -> accum
+    ACons left right ->
       List.foldl func accum [ left, right ]
-    Record fields ->
+    AEnd -> accum
+    ARecord fields ->
       List.foldl func accum <| List.map Tuple.second fields
-    other -> accum
 
 
 combine : Atom (Result x e) -> Result x (Atom e)
 combine atom =
   case atom of
-    Basic basic ->
-      Ok <| Basic basic
-    Variable name ->
-      Ok <| Variable name
-    None -> Ok <| None
-    Some expr ->
-      Result.map Some expr
-    End -> Ok <| End
-    Cons left right ->
-      Result.map2 Cons left right
-    Record fields ->
+    ABasic basic ->
+      Ok <| ABasic basic
+    AVariable name ->
+      Ok <| AVariable name
+    AJust expr ->
+      Result.map AJust expr
+    ANothing -> Ok <| ANothing
+    ACons left right ->
+      Result.map2 ACons left right
+    AEnd -> Ok <| AEnd
+    ARecord fields ->
       let
         ( names, values ) = List.unzip fields
       in
-      Result.map (Record << List.zip names) <| List.combine values
+      Result.map (ARecord << List.zip names) <| List.combine values

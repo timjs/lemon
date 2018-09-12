@@ -29,10 +29,10 @@ type alias Model =
 
 example : String
 example = """
-map : ('a -> 'b) -> list 'a -> list 'b;
+map : (a -> b) -> List a -> List b;
 map f list = case list of
-  [] -> [];
-  x :: xs -> cons (f x) (map f xs)
+  End -> End;
+  Cons x xs -> Cons (f x) (map f xs)
   """
 
 
