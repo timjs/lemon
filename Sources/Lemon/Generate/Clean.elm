@@ -2,16 +2,13 @@ module Lemon.Generate.Clean exposing (generate)
 
 import Dict exposing (Dict)
 import Helpers.Pretty exposing (..)
-import Lemon.Name exposing (Fields, Name)
+import Lemon.Name exposing (Name)
 import Lemon.Syntax.Canonical exposing (Declaration(..), Expression(..), Module(..), Scope)
-import Lemon.Syntax.Common.Atom as Atom exposing (Atom(..), Basic(..))
+import Lemon.Syntax.Common.Atom as Atom exposing (Atom(..), Basic(..), Fields)
 import Lemon.Syntax.Common.Pattern exposing (Alternative, Parameter, Pattern(..))
-import Lemon.Syntax.Common.Statement as Statement exposing (Statement)
+import Lemon.Syntax.Common.Statement as Statement exposing (Statement(..))
 import Lemon.Syntax.Common.Type exposing (BasicType(..), Type(..))
 import Pretty exposing (..)
-
-
-todo = Debug.todo "todo"
 
 
 
@@ -31,7 +28,6 @@ module_ (Module inner) =
   lines
     [ string preamble
     , empty
-    , empty
     , scope inner
     ]
 
@@ -45,7 +41,7 @@ declaration name (Value typ expr) doc =
   lines
     [ words [ string name, string "::", type_ typ ]
     , words [ string name, string "=" ]
-    , indent 2 (expression expr)
+    , indent <| expression expr
     , empty
     ]
 
@@ -56,7 +52,71 @@ declaration name (Value typ expr) doc =
 
 expression : Expression -> Doc
 expression expr =
-  todo
+  case expr of
+    Atom a ->
+      atom a
+    Lambda ( pat, _ ) inner ->
+      parens <| words [ char '\\', pattern pat, string "->", expression inner ]
+    Call func arg ->
+      words [ parens <| expression func, parens <| expression arg ]
+    Let decls inner ->
+      lines
+        [ string "let"
+        , indent <| scope decls
+        , string "in"
+        , expression inner
+        ]
+    Case match alts ->
+      lines
+        [ words [ string "case", expression match, string "of" ]
+        , indent <| List.foldl alternative empty alts
+        ]
+    Sequence stmts ->
+      parens <| lines <| List.map statement stmts
+
+
+
+-- Statements --
+
+
+statement : Statement Expression -> Doc
+statement stmt =
+  let
+    bind pat expr =
+      words [ expression expr, string ">>=", char '\\', pattern pat, string "->" ]
+    pair2 ( pred, stmts ) =
+      tuple [ expression pred, statement stmt ]
+    pair3 ( name, pred, stmts ) =
+      tuple [ string name, expression pred, statement stmt ]
+    par stmts =
+      lines
+        [ string "also"
+        , indent <| lines <| List.map statement stmts
+        ]
+    some_tuple_with_visible_names = Debug.todo "some tuple with visible names"
+  in
+  case stmt of
+    Set pat expr ->
+      words [ string "let", pattern pat, char '=', expression expr, string "in" ]
+    Bind pat expr ->
+      bind pat expr
+    Do expr ->
+      bind PIgnore expr
+    Par brns ->
+      lines <| List.map par brns
+    When brns ->
+      lines
+        [ string ">>>"
+        , indent <| list <| List.map pair2 brns
+        ]
+    On brns ->
+      lines
+        [ string ">?>"
+        , indent <| list <| List.map pair3 brns
+        ]
+    Done ->
+      --FIXME: How to handle this?
+      words [ string "return", tuple <| List.map string <| some_tuple_with_visible_names ]
 
 
 
@@ -64,21 +124,25 @@ expression expr =
 
 
 atom : Atom Expression -> Doc
-atom a =
-  case a of
-    ABasic b ->
-      basic b
+atom atm =
+  case atm of
+    ABasic bas ->
+      basic bas
     AVariable name ->
       string name
-    AConstructor name exprs ->
-      words <| string name :: List.map (parens << expression) exprs
+    AJust inner ->
+      just expression inner
+    ANothing -> nothing
+    ACons head tail ->
+      cons expression head tail
+    ANil -> nil
     ARecord fields ->
       tuple <| List.map (expression << Tuple.second) fields
 
 
 basic : Basic -> Doc
-basic b =
-  case b of
+basic bas =
+  case bas of
     Bool True ->
       string "True"
     Bool False ->
@@ -89,6 +153,50 @@ basic b =
       string <| String.fromFloat f
     String s ->
       surround (char '"') (char '"') <| string s
+
+
+cons conv head tail =
+  brackets <| words [ conv head, char ':', conv tail ]
+
+
+nil = string "[]"
+
+
+just conv inner =
+  words [ string "Just", parens <| conv inner ]
+
+
+nothing = string "Nothing"
+
+
+
+-- Patterns --
+
+
+pattern : Pattern -> Doc
+pattern pat =
+  case pat of
+    PBasic bas ->
+      basic bas
+    PVariable name ->
+      string name
+    PJust inner ->
+      just pattern inner
+    PNothing -> nothing
+    PCons head tail ->
+      cons pattern head tail
+    PNil -> nil
+    PRecord fields ->
+      tuple <| List.map (string << Tuple.first) fields
+    PIgnore -> char '_'
+
+
+alternative : Alternative Expression -> Doc -> Doc
+alternative ( pat, expr ) doc =
+  lines
+    [ words [ pattern pat, string "->" ]
+    , indent <| expression expr
+    ]
 
 
 
@@ -111,7 +219,7 @@ type_ typ =
     TTask inner ->
       words [ string "Task", type_ inner ]
     TArrow left right ->
-      words [ char '(', type_ left, char ')', string "->", type_ right ]
+      words [ parens <| type_ left, string "->", type_ right ]
 
 
 basicType : BasicType -> Doc
@@ -125,6 +233,10 @@ basicType b =
 
 
 -- Helpers ---------------------------------------------------------------------
+
+
+indent : Doc -> Doc
+indent = Pretty.indent 2
 
 
 tuple : List Doc -> Doc
@@ -148,11 +260,9 @@ import Data.List
 import Data.Func
 
 
-// Basic combinators ///////////////////////////////////////////////////////////
+// Preamble ////////////////////////////////////////////////////////////////////
 
 :: List a :== [a]
-Cons x xs :== [x : xs]
-End       :== []
 null :== isEmpty
 
 (|||) infixr 2 //:: (a -> Bool) -> (a -> Bool) -> a -> Bool
@@ -221,4 +331,8 @@ where
 // Fail
 fail :: Task a
 fail = transform (\\_ -> NoValue) (return ())
+
+
+// Code ////////////////////////////////////////////////////////////////////////
+
 """
