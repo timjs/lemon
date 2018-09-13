@@ -1,7 +1,7 @@
-module Helpers.Pretty exposing (a, brackets, lines, softlines, words)
+module Helpers.Pretty exposing (brackets, lines, softlines, words)
 
 import Helpers.Function exposing (flip)
-import Pretty exposing (Doc, append, char, join, line, softline, space, surround)
+import Pretty exposing (..)
 
 
 a : Doc -> Doc -> Doc
@@ -18,6 +18,11 @@ softlines = join softline
 
 words : List Doc -> Doc
 words = join space
+
+
+fold : (a -> Doc -> Doc) -> List a -> Doc
+fold f =
+  List.foldl f empty
 
 
 brackets : Doc -> Doc

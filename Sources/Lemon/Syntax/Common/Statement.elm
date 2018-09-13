@@ -2,6 +2,7 @@ module Lemon.Syntax.Common.Statement exposing
   ( Statement(..)
   , combine
   , map
+  , visible
   )
 
 import Helpers.List as List
@@ -9,13 +10,16 @@ import Lemon.Name exposing (Name)
 import Lemon.Syntax.Common.Pattern exposing (Pattern)
 
 
+todo = Debug.todo "todo"
+
+
 type Statement e
   = Set Pattern e
   | Bind Pattern e
   | Do e
   | Par (List (List (Statement e)))
-  | On (List ( Name, e, List (Statement e) ))
   | When (List ( e, List (Statement e) ))
+  | On (List ( Name, e, List (Statement e) ))
   | Done
 
 
@@ -36,10 +40,10 @@ map f stmt =
       Do <| f expr
     Par exprs ->
       Par <| List.map (List.map (map f)) exprs
-    On branches ->
-      On <| List.map mapOn branches
     When branches ->
       When <| List.map mapWhen branches
+    On branches ->
+      On <| List.map mapOn branches
     Done -> Done
 
 
@@ -64,8 +68,17 @@ combine stmt =
       Result.map Do <| expr
     Par branches ->
       Result.map Par <| List.combine (List.map List.combine (List.map (List.map combine) branches))
-    On branches ->
-      Result.map On <| List.combine (List.map combineOn branches)
     When branches ->
       Result.map When <| List.combine (List.map combineWhen branches)
+    On branches ->
+      Result.map On <| List.combine (List.map combineOn branches)
     Done -> Ok Done
+
+
+
+--FIXME: Is this doable to do on the tree or should we do this during canonicalisation and save it?
+
+
+visible : Statement e -> List Name
+visible statement =
+  todo

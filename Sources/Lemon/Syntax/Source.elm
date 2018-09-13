@@ -6,7 +6,8 @@ module Lemon.Syntax.Source exposing
   , empty
   )
 
---XXX: Actually we would like to re-export the Syntax.Common module...
+--XXX: Actually we would like to re-export the Syntax.Common module,
+--     but that's not allowes :-(
 
 import Lemon.Name exposing (Name)
 import Lemon.Syntax.Common.Atom exposing (..)

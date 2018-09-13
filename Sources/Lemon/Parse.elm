@@ -146,13 +146,9 @@ statement =
               |. spaces
               |= by semicolon (lazy (\_ -> statement))
             )
-    , map On <|
+    , map When <|
         by spaces <|
-          succeed triple
-            |. keyword "on"
-            |. spaces
-            |= string
-            |. spaces
+          succeed Tuple.pair
             |. keyword "when"
             |. spaces
             |= lazy (\_ -> expression)
@@ -160,9 +156,13 @@ statement =
             |. keyword "do"
             |. spaces
             |= by semicolon (lazy (\_ -> statement))
-    , map When <|
+    , map On <|
         by spaces <|
-          succeed Tuple.pair
+          succeed triple
+            |. keyword "on"
+            |. spaces
+            |= string
+            |. spaces
             |. keyword "when"
             |. spaces
             |= lazy (\_ -> expression)
