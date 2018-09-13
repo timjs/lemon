@@ -187,17 +187,15 @@ statement =
 atom : Parser (Atom Expression)
 atom =
   let
-    --FIXME: Is this correct?
-    desugar = List.foldr (\e es -> Syntax.cons e (Atom es)) Syntax.end
-    args =
-      succeed identity
-        |. spaces
-        |= by spaces (lazy (\_ -> expression))
+    desugar = List.foldr (\e es -> ACons e (Atom es)) AEnd
   in
   oneOf
     [ succeed ABasic |= basic
     , succeed AVariable |= lower
-    , succeed AConstructor |= upper |= optional [] args
+    , succeed AJust |. keyword "Just" |. spaces |= lazy (\_ -> expression)
+    , succeed ANothing |. keyword "Nothing"
+    , succeed ACons |. keyword "Cons" |. spaces |= lazy (\_ -> expression) |. spaces |= lazy (\_ -> expression)
+    , succeed AEnd |. keyword "End"
     , succeed desugar |= list (lazy (\_ -> expression))
     , succeed ARecord |= record colon (lazy (\_ -> expression))
     ]
@@ -209,8 +207,7 @@ basic =
     [ succeed (Bool True) |. keyword "True"
     , succeed (Bool False) |. keyword "False"
     , succeed Int |= backtrackable int --NOTE: ints are like floats, we need to backtrack here
-
-    -- , succeed Float |= float
+    , succeed Float |= float
     , succeed String |= string
     ]
 
@@ -288,7 +285,10 @@ pattern =
   oneOf
     [ succeed PBasic |= basic
     , succeed PVariable |= lower
-    , succeed PConstructor |= upper |. spaces |= by spaces (lazy (\_ -> pattern))
+    , succeed PJust |. keyword "Just" |. spaces |= lazy (\_ -> pattern)
+    , succeed PNothing |. keyword "Nothing"
+    , succeed PCons |. keyword "Cons" |. spaces |= lazy (\_ -> pattern) |. spaces |= lazy (\_ -> pattern)
+    , succeed PEnd |. keyword "End"
     , succeed PRecord |= record equals (lazy (\_ -> pattern))
     , succeed PIgnore |. underscore
     , succeed identity |= parens (lazy (\_ -> pattern))
@@ -354,14 +354,6 @@ many item =
         ]
   in
   loop [] helper
-
-
-optional : a -> Parser a -> Parser a
-optional default item =
-  oneOf
-    [ item
-    , succeed default
-    ]
 
 
 by : Parser () -> Parser a -> Parser (List a)
