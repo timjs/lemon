@@ -18,7 +18,7 @@ type Atom e
   | AJust e
   | ANothing
   | ACons e e
-  | AEnd
+  | ANil
   | ARecord (Fields e)
 
 
@@ -41,7 +41,7 @@ map func atom =
     ANothing -> ANothing
     ACons left right ->
       ACons (func left) (func right)
-    AEnd -> AEnd
+    ANil -> ANil
     ARecord fields ->
       ARecord <| List.map (Tuple.mapSecond func) fields
 
@@ -58,7 +58,7 @@ foldl func accum atom =
     ANothing -> accum
     ACons left right ->
       List.foldl func accum [ left, right ]
-    AEnd -> accum
+    ANil -> accum
     ARecord fields ->
       List.foldl func accum <| List.map Tuple.second fields
 
@@ -75,7 +75,7 @@ combine atom =
     ANothing -> Ok <| ANothing
     ACons left right ->
       Result.map2 ACons left right
-    AEnd -> Ok <| AEnd
+    ANil -> Ok <| ANil
     ARecord fields ->
       let
         ( names, values ) = List.unzip fields

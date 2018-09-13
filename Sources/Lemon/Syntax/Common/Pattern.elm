@@ -15,7 +15,7 @@ type Pattern
   | PJust Pattern
   | PNothing
   | PCons Pattern Pattern
-  | PEnd
+  | PNil
   | PRecord (Fields Pattern)
   | PIgnore
 

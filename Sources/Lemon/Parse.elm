@@ -187,7 +187,7 @@ statement =
 atom : Parser (Atom Expression)
 atom =
   let
-    desugar = List.foldr (\e es -> ACons e (Atom es)) AEnd
+    desugar = List.foldr (\e es -> ACons e (Atom es)) ANil
   in
   oneOf
     [ succeed ABasic |= basic
@@ -195,7 +195,7 @@ atom =
     , succeed AJust |. keyword "Just" |. spaces |= lazy (\_ -> expression)
     , succeed ANothing |. keyword "Nothing"
     , succeed ACons |. keyword "Cons" |. spaces |= lazy (\_ -> expression) |. spaces |= lazy (\_ -> expression)
-    , succeed AEnd |. keyword "End"
+    , succeed ANil |. symbol "[]"
     , succeed desugar |= list (lazy (\_ -> expression))
     , succeed ARecord |= record colon (lazy (\_ -> expression))
     ]
@@ -282,17 +282,26 @@ record sep item =
 
 pattern : Parser Pattern
 pattern =
+  let
+    maybeCons left =
+      oneOf
+        [ succeed (PCons left)
+            |. backtrackable doublecolon
+            |= pattern
+        , succeed left
+        ]
+  in
   oneOf
     [ succeed PBasic |= basic
     , succeed PVariable |= lower
     , succeed PJust |. keyword "Just" |. spaces |= lazy (\_ -> pattern)
     , succeed PNothing |. keyword "Nothing"
-    , succeed PCons |. keyword "Cons" |. spaces |= lazy (\_ -> pattern) |. spaces |= lazy (\_ -> pattern)
-    , succeed PEnd |. keyword "End"
+    , succeed PNil |. symbol "[]"
     , succeed PRecord |= record equals (lazy (\_ -> pattern))
     , succeed PIgnore |. underscore
     , succeed identity |= parens (lazy (\_ -> pattern))
     ]
+    |> andThen maybeCons
 
 
 
@@ -407,6 +416,10 @@ arrow = spacy <| symbol "->"
 
 underscore : Parser ()
 underscore = spacy <| symbol "_"
+
+
+doublecolon : Parser ()
+doublecolon = spacy <| symbol "::"
 
 
 

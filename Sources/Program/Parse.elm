@@ -31,8 +31,8 @@ example : String
 example = """
 map : (a -> b) -> List a -> List b;
 map f list = case list of
-  End -> End;
-  Cons x xs -> Cons (f x) (map f xs)
+  [] -> [];
+  x :: xs -> f x :: map f xs
   """
 
 
