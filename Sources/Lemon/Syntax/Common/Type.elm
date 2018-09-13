@@ -3,7 +3,8 @@ module Lemon.Syntax.Common.Type exposing
   , Type(..)
   )
 
-import Lemon.Name exposing (Fields, Name)
+import Lemon.Name exposing (Name)
+import Lemon.Syntax.Common.Atom exposing (Fields)
 
 
 type Type

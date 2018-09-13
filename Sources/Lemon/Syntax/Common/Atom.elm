@@ -1,15 +1,15 @@
 module Lemon.Syntax.Common.Atom exposing
   ( Atom(..)
   , Basic(..)
+  , Fields
   , combine
   , foldl
   , map
   )
 
 import Helpers.List as List
-import Lemon.Name exposing (..)
+import Lemon.Name exposing (Name)
 import List.Extra as List
-import Result.Extra as Result
 
 
 type Atom e
@@ -20,6 +20,10 @@ type Atom e
   | ACons e e
   | ANil
   | ARecord (Fields e)
+
+
+type alias Fields a =
+  List ( Name, a )
 
 
 type Basic

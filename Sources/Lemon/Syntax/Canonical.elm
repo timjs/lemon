@@ -12,11 +12,11 @@ import Dict exposing (Dict)
 import Helpers.List as List
 import Helpers.Tuple as Tuple
 import Lemon.Name exposing (Name)
-import Lemon.Syntax.Abstract as Abstract
 import Lemon.Syntax.Common.Atom as Atom exposing (Atom(..), Basic(..))
 import Lemon.Syntax.Common.Pattern exposing (Alternative, Parameter, Pattern(..))
 import Lemon.Syntax.Common.Statement as Statement exposing (Statement)
 import Lemon.Syntax.Common.Type exposing (Type(..))
+import Lemon.Syntax.Source as Source
 import Result.Extra as Result
 
 
@@ -74,17 +74,17 @@ type Error
   | BadNaming Name Name
 
 
-canonicalise : Abstract.Module -> Result Error Module
-canonicalise (Abstract.Module scope) =
+canonicalise : Source.Module -> Result Error Module
+canonicalise (Source.Module scope) =
   Result.map Module <| doScope scope
 
 
-doScope : Abstract.Scope -> Result Error Scope
+doScope : Source.Scope -> Result Error Scope
 doScope = List.map doDeclaration >> List.combine >> Result.map Dict.fromList
 
 
-doDeclaration : Abstract.Declaration -> Result Error ( Name, Declaration )
-doDeclaration (Abstract.Value name1 typ name2 params body) =
+doDeclaration : Source.Declaration -> Result Error ( Name, Declaration )
+doDeclaration (Source.Value name1 typ name2 params body) =
   if name1 == name2 then
     doBody typ params body
       |> Result.map (\res -> ( name1, Value typ res ))
@@ -92,7 +92,7 @@ doDeclaration (Abstract.Value name1 typ name2 params body) =
     Err <| BadNaming name1 name2
 
 
-doBody : Type -> List Pattern -> Abstract.Expression -> Result Error Expression
+doBody : Type -> List Pattern -> Source.Expression -> Result Error Expression
 doBody typ params body =
   let
     go arrow patterns expr =
@@ -109,33 +109,33 @@ doBody typ params body =
   doExpression body |> Result.andThen (go typ params)
 
 
-doExpression : Abstract.Expression -> Result Error Expression
+doExpression : Source.Expression -> Result Error Expression
 doExpression expr =
   case expr of
-    Abstract.Atom atom ->
+    Source.Atom atom ->
       Result.map Atom
         (Atom.combine <| Atom.map doExpression atom)
-    Abstract.Lambda params body ->
+    Source.Lambda params body ->
       Result.map2 (List.foldr Lambda)
         (doExpression body)
         (Ok params)
-    Abstract.Call func args ->
+    Source.Call func args ->
       Result.map2 (List.foldl Call)
         (doExpression func)
         (List.combine <| List.map doExpression args)
-    Abstract.Let scope body ->
+    Source.Let scope body ->
       Result.map2 Let
         (doScope scope)
         (doExpression body)
-    Abstract.Case test alts ->
+    Source.Case test alts ->
       Result.map2 Case
         (doExpression test)
         (List.combine <| List.map (Tuple.combineSecond << Tuple.mapSecond doExpression) alts)
-    Abstract.If test true false ->
+    Source.If test true false ->
       Result.map3 mkIf
         (doExpression test)
         (doExpression true)
         (doExpression false)
-    Abstract.Sequence stmts ->
+    Source.Sequence stmts ->
       Result.map Sequence
         (List.combine <| List.map (Statement.combine << Statement.map doExpression) stmts)

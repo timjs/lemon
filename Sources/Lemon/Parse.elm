@@ -1,18 +1,18 @@
 module Lemon.Parse exposing (parse)
 
-import Lemon.Name exposing (Fields, Name)
-import Lemon.Syntax.Common.Atom as Syntax exposing (Atom(..), Basic(..))
-import Lemon.Syntax.Common.Pattern as Syntax exposing (Alternative, Parameter, Pattern(..))
-import Lemon.Syntax.Common.Statement as Syntax exposing (Statement(..))
-import Lemon.Syntax.Common.Type as Syntax exposing (BasicType(..), Type(..))
-import Lemon.Syntax.Source as Syntax exposing (..)
+import Lemon.Name exposing (Name)
+import Lemon.Syntax.Common.Atom exposing (Atom(..), Basic(..), Fields)
+import Lemon.Syntax.Common.Pattern exposing (Alternative, Parameter, Pattern(..))
+import Lemon.Syntax.Common.Statement as Source exposing (Statement(..))
+import Lemon.Syntax.Common.Type exposing (BasicType(..), Type(..))
+import Lemon.Syntax.Source exposing (Declaration(..), Expression(..), Module(..), Scope)
 import Parser exposing (..)
 import Parser.Extras exposing (parens)
 import Set exposing (Set)
 
 
 parse : String -> Result (List DeadEnd) Module
-parse = run module_
+parse = Parser.run module_
 
 
 
@@ -170,7 +170,7 @@ statement =
             |. keyword "do"
             |. spaces
             |= by semicolon (lazy (\_ -> statement))
-    , succeed Syntax.Done |. keyword "done"
+    , succeed Source.Done |. keyword "done"
     , succeed Bind
         |= pattern
         |. arrow
