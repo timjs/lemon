@@ -11,12 +11,12 @@ module Lemon.Syntax.Canonical exposing
 import Dict exposing (Dict)
 import Helpers.List as List
 import Helpers.Tuple as Tuple
-import Lemon.Name exposing (Name)
+import Lemon.Names exposing (Name)
 import Lemon.Syntax.Common.Atom as Atom exposing (Atom(..), Basic(..))
 import Lemon.Syntax.Common.Pattern exposing (Alternative, Parameter, Pattern(..))
 import Lemon.Syntax.Common.Statement as Statement exposing (Statement)
-import Lemon.Syntax.Common.Type exposing (Type(..))
-import Lemon.Syntax.Source as Source
+import Lemon.Syntax.Fundamental as Fundamental
+import Lemon.Types exposing (Type(..))
 import Result.Extra as Result
 
 
@@ -74,17 +74,17 @@ type Error
   | BadNaming Name Name
 
 
-canonicalise : Source.Module -> Result Error Module
-canonicalise (Source.Module scope) =
+canonicalise : Fundamental.Module -> Result Error Module
+canonicalise (Fundamental.Module scope) =
   Result.map Module <| doScope scope
 
 
-doScope : Source.Scope -> Result Error Scope
+doScope : Fundamental.Scope -> Result Error Scope
 doScope = List.map doDeclaration >> List.combine >> Result.map Dict.fromList
 
 
-doDeclaration : Source.Declaration -> Result Error ( Name, Declaration )
-doDeclaration (Source.Value name1 typ name2 params body) =
+doDeclaration : Fundamental.Declaration -> Result Error ( Name, Declaration )
+doDeclaration (Fundamental.Value name1 typ name2 params body) =
   if name1 == name2 then
     doBody typ params body
       |> Result.map (\res -> ( name1, Value typ res ))
@@ -92,7 +92,7 @@ doDeclaration (Source.Value name1 typ name2 params body) =
     Err <| BadNaming name1 name2
 
 
-doBody : Type -> List Pattern -> Source.Expression -> Result Error Expression
+doBody : Type -> List Pattern -> Fundamental.Expression -> Result Error Expression
 doBody typ params body =
   let
     go arrow patterns expr =
@@ -109,33 +109,33 @@ doBody typ params body =
   doExpression body |> Result.andThen (go typ params)
 
 
-doExpression : Source.Expression -> Result Error Expression
+doExpression : Fundamental.Expression -> Result Error Expression
 doExpression expr =
   case expr of
-    Source.Atom atom ->
+    Fundamental.Atom atom ->
       Result.map Atom
         (Atom.combine <| Atom.map doExpression atom)
-    Source.Lambda params body ->
+    Fundamental.Lambda params body ->
       Result.map2 (List.foldr Lambda)
         (doExpression body)
         (Ok params)
-    Source.Call func args ->
+    Fundamental.Call func args ->
       Result.map2 (List.foldl Call)
         (doExpression func)
         (List.combine <| List.map doExpression args)
-    Source.Let scope body ->
+    Fundamental.Let scope body ->
       Result.map2 Let
         (doScope scope)
         (doExpression body)
-    Source.Case test alts ->
+    Fundamental.Case test alts ->
       Result.map2 Case
         (doExpression test)
         (List.combine <| List.map (Tuple.combineSecond << Tuple.mapSecond doExpression) alts)
-    Source.If test true false ->
+    Fundamental.If test true false ->
       Result.map3 mkIf
         (doExpression test)
         (doExpression true)
         (doExpression false)
-    Source.Sequence stmts ->
+    Fundamental.Sequence stmts ->
       Result.map Sequence
         (List.combine <| List.map (Statement.combine << Statement.map doExpression) stmts)

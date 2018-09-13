@@ -1,4 +1,4 @@
-module Lemon.Name exposing
+module Lemon.Names exposing
   ( Name
   , isLower
   , isUpper

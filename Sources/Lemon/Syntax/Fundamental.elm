@@ -1,4 +1,4 @@
-module Lemon.Syntax.Source exposing
+module Lemon.Syntax.Fundamental exposing
   ( Declaration(..)
   , Expression(..)
   , Module(..)
@@ -9,11 +9,11 @@ module Lemon.Syntax.Source exposing
 --XXX: Actually we would like to re-export the Syntax.Common module,
 --     but that's not allowes :-(
 
-import Lemon.Name exposing (Name)
+import Lemon.Names exposing (Name)
 import Lemon.Syntax.Common.Atom exposing (..)
 import Lemon.Syntax.Common.Pattern exposing (..)
 import Lemon.Syntax.Common.Statement exposing (..)
-import Lemon.Syntax.Common.Type exposing (..)
+import Lemon.Types exposing (..)
 
 
 

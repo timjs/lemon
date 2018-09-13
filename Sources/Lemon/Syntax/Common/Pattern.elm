@@ -4,9 +4,9 @@ module Lemon.Syntax.Common.Pattern exposing
   , Pattern(..)
   )
 
-import Lemon.Name exposing (Name)
+import Lemon.Names exposing (Name)
 import Lemon.Syntax.Common.Atom exposing (Basic, Fields)
-import Lemon.Syntax.Common.Type exposing (Type)
+import Lemon.Types exposing (Type)
 
 
 

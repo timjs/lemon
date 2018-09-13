@@ -8,7 +8,7 @@ module Lemon.Syntax.Common.Atom exposing
   )
 
 import Helpers.List as List
-import Lemon.Name exposing (Name)
+import Lemon.Names exposing (Name)
 import List.Extra as List
 
 

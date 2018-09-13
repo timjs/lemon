@@ -6,7 +6,7 @@ module Lemon.Syntax.Common.Statement exposing
   )
 
 import Helpers.List as List
-import Lemon.Name exposing (Name)
+import Lemon.Names exposing (Name)
 import Lemon.Syntax.Common.Pattern exposing (Pattern)
 
 

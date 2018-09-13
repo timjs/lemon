@@ -2,12 +2,12 @@ module Lemon.Generate.Clean exposing (generate)
 
 import Dict exposing (Dict)
 import Helpers.Pretty exposing (..)
-import Lemon.Name exposing (Name)
+import Lemon.Names exposing (Name)
 import Lemon.Syntax.Canonical exposing (Declaration(..), Expression(..), Module(..), Scope)
 import Lemon.Syntax.Common.Atom as Atom exposing (Atom(..), Basic(..), Fields)
 import Lemon.Syntax.Common.Pattern exposing (Alternative, Parameter, Pattern(..))
 import Lemon.Syntax.Common.Statement as Statement exposing (Statement(..))
-import Lemon.Syntax.Common.Type exposing (BasicType(..), Type(..))
+import Lemon.Types exposing (BasicType(..), Type(..))
 import Pretty exposing (..)
 
 

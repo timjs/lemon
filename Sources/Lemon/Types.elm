@@ -1,9 +1,9 @@
-module Lemon.Syntax.Common.Type exposing
+module Lemon.Types exposing
   ( BasicType(..)
   , Type(..)
   )
 
-import Lemon.Name exposing (Name)
+import Lemon.Names exposing (Name)
 import Lemon.Syntax.Common.Atom exposing (Fields)
 
 
