@@ -1,4 +1,4 @@
-module Lemon.Syntax.Abstract exposing
+module Lemon.Syntax.Source exposing
   ( Declaration(..)
   , Expression(..)
   , Module(..)

@@ -1,4 +1,4 @@
-module Program.Parser exposing
+module Program.Parse exposing
   ( Model
   , Msg
   , init
@@ -11,8 +11,8 @@ import Dict
 import Html exposing (..)
 import Html.Attributes as Html
 import Html.Events as Html
-import Lemon.Parser exposing (parse)
-import Lemon.Syntax.Abstract exposing (Module(..), empty)
+import Lemon.Parse exposing (parse)
+import Lemon.Syntax.Source exposing (Module(..), empty)
 import List.Extra as List
 import Parser
 
