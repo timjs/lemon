@@ -1,11 +1,7 @@
 module Lemon.Parse exposing (parse)
 
 import Lemon.Names exposing (Name)
-import Lemon.Syntax.Common.Atom exposing (Atom(..), Basic(..), Fields)
-import Lemon.Syntax.Common.Pattern exposing (Alternative, Parameter, Pattern(..))
-import Lemon.Syntax.Common.Statement as Source exposing (Statement(..))
-import Lemon.Syntax.Textual exposing (Declaration(..), Expression(..), Module(..), Scope)
-import Lemon.Types exposing (BasicType(..), Type(..))
+import Lemon.Syntax.Textual exposing (..)
 import Parser exposing (..)
 import Parser.Extras exposing (parens)
 import Set exposing (Set)
@@ -115,7 +111,7 @@ parameter =
     |= type_
 
 
-alternative : Parser (Alternative Expression)
+alternative : Parser Alternative
 alternative =
   succeed Tuple.pair
     |= pattern
@@ -123,20 +119,20 @@ alternative =
     |= lazy (\_ -> expression)
 
 
-statement : Parser (Statement Expression)
+statement : Parser Statement
 statement =
   let
     triple x y z =
-      ( x, y, z )
+      ( x, ( y, z ) )
   in
   oneOf
-    [ succeed Set
+    [ succeed SLet
         |. keyword "let"
         |. spaces
         |= pattern
         |. equals
         |= lazy (\_ -> expression)
-    , succeed (\x xs -> Par (x :: xs))
+    , succeed (\x xs -> SPar (x :: xs))
         |. keyword "do"
         |. spaces
         |= by semicolon (lazy (\_ -> statement))
@@ -146,7 +142,7 @@ statement =
               |. spaces
               |= by semicolon (lazy (\_ -> statement))
             )
-    , map When <|
+    , map SWhen <|
         by spaces <|
           succeed Tuple.pair
             |. keyword "when"
@@ -156,7 +152,7 @@ statement =
             |. keyword "do"
             |. spaces
             |= by semicolon (lazy (\_ -> statement))
-    , map On <|
+    , map SOn <|
         by spaces <|
           succeed triple
             |. keyword "on"
@@ -170,12 +166,12 @@ statement =
             |. keyword "do"
             |. spaces
             |= by semicolon (lazy (\_ -> statement))
-    , succeed Source.Done |. keyword "done"
-    , succeed Bind
+    , succeed SDone |. keyword "done"
+    , succeed SBind
         |= pattern
         |. arrow
         |= lazy (\_ -> expression)
-    , succeed Do
+    , succeed SIgnore
         |= lazy (\_ -> expression)
     ]
 
@@ -184,7 +180,7 @@ statement =
 -- Atoms -----------------------------------------------------------------------
 
 
-atom : Parser (Atom Expression)
+atom : Parser Atom
 atom =
   let
     desugar = List.foldr (\e es -> ACons e (Atom es)) ANil

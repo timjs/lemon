@@ -3,8 +3,8 @@ module Lemon.Types exposing
   , Type(..)
   )
 
+import Dict exposing (Dict)
 import Lemon.Names exposing (Name)
-import Lemon.Syntax.Common.Atom exposing (Fields)
 
 
 type Type
@@ -12,7 +12,7 @@ type Type
   | TVariable Name
   | TMaybe Type
   | TList Type
-  | TRecord (Fields Type)
+  | TRecord (Dict Name Type)
   | TTask Type
   | TArrow Type Type
 

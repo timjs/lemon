@@ -1,23 +1,25 @@
 module Lemon.Syntax.Textual exposing
-  ( Declaration(..)
+  ( Alternative
+  , Atom(..)
+  , Basic(..)
+  , BasicType(..)
+  , Branch
+  , Declaration(..)
   , Expression(..)
+  , Fields
   , Module(..)
+  , Parameter
+  , Pattern(..)
   , Scope
-  , empty
+  , Statement(..)
+  , Type(..)
   )
 
---XXX: Actually we would like to re-export the Syntax.Common module,
---     but that's not allowes :-(
-
-import Lemon.Names exposing (Name)
-import Lemon.Syntax.Common.Atom exposing (..)
-import Lemon.Syntax.Common.Pattern exposing (..)
-import Lemon.Syntax.Common.Statement exposing (..)
-import Lemon.Types exposing (..)
+import Lemon.Names exposing (..)
 
 
 
--- Modules and Definitions -----------------------------------------------------
+-- Modules and declarations ----------------------------------------------------
 
 
 type Module
@@ -37,18 +39,97 @@ type Declaration
 
 
 type Expression
-  = Atom (Atom Expression)
+  = Atom Atom
   | Lambda (List Parameter) Expression
   | Call Expression (List Expression)
   | Let Scope Expression
-  | Case Expression (List (Alternative Expression))
+  | Case Expression (List Alternative)
   | If Expression Expression Expression
-  | Sequence (List (Statement Expression))
+  | Sequence (List Statement)
+
+
+type alias Alternative =
+  ( Pattern, Expression )
 
 
 
--- Init ------------------------------------------------------------------------
+-- Atoms -----------------------------------------------------------------------
 
 
-empty : Scope
-empty = []
+type Atom
+  = ABasic Basic
+  | AVariable Name
+  | AJust Expression
+  | ANothing
+  | ACons Expression Expression
+  | ANil
+  | ARecord (Fields Expression)
+
+
+type alias Fields a =
+  List ( Name, a )
+
+
+type Basic
+  = Bool Bool
+  | Int Int
+  | Float Float
+  | String String
+
+
+
+-- Statements ------------------------------------------------------------------
+
+
+type Statement
+  = SLet Pattern Expression
+  | SBind Pattern Expression
+  | SIgnore Expression
+  | SPar (List (List Statement))
+  | SWhen (List Branch)
+  | SOn (List ( Name, Branch ))
+  | SDone
+
+
+type alias Branch =
+  ( Expression, List Statement )
+
+
+
+-- Patterns --------------------------------------------------------------------
+
+
+type Pattern
+  = PBasic Basic
+  | PVariable Name
+  | PJust Pattern
+  | PNothing
+  | PCons Pattern Pattern
+  | PNil
+  | PRecord (Fields Pattern)
+  | PIgnore
+
+
+type alias Parameter =
+  ( Pattern, Type )
+
+
+
+-- Patterns --------------------------------------------------------------------
+
+
+type Type
+  = TBasic BasicType
+  | TVariable Name
+  | TMaybe Type
+  | TList Type
+  | TRecord (Fields Type)
+  | TTask Type
+  | TArrow Type Type
+
+
+type BasicType
+  = TBool
+  | TInt
+  | TFloat
+  | TString
