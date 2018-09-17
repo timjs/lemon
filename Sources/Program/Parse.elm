@@ -12,7 +12,7 @@ import Html exposing (..)
 import Html.Attributes as Html
 import Html.Events as Html
 import Lemon.Parse exposing (parse)
-import Lemon.Syntax.Fundamental exposing (Module(..), empty)
+import Lemon.Syntax.Textual exposing (Module(..), empty)
 import List.Extra as List
 import Parser
 

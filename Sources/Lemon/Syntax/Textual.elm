@@ -1,4 +1,4 @@
-module Lemon.Syntax.Fundamental exposing
+module Lemon.Syntax.Textual exposing
   ( Declaration(..)
   , Expression(..)
   , Module(..)
