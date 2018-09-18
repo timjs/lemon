@@ -1,7 +1,9 @@
 module Helpers.Result exposing
   ( combineBoth
+  , combineFirst
   , combineMap
   , combineMapBoth
+  , combineMapFirst
   , combineMapSecond
   , combineSecond
   , join
@@ -9,6 +11,10 @@ module Helpers.Result exposing
 
 import Result exposing (..)
 import Result.Extra exposing (..)
+
+
+swap ( x, y ) =
+  ( y, x )
 
 
 
@@ -28,6 +34,12 @@ combineMap g xs =
 
 {-| Actually `sequence` on Tuples and Results
 -}
+combineFirst : ( Result x a, c ) -> Result x ( a, c )
+combineFirst = map swap << combineSecond << swap
+
+
+{-| Actually `sequence` on Tuples and Results
+-}
 combineSecond : ( c, Result x a ) -> Result x ( c, a )
 combineSecond ( x, ry ) =
   map (Tuple.pair x) ry
@@ -38,18 +50,31 @@ combineBoth ( rx, ry ) =
   map2 Tuple.pair rx ry
 
 
+combineMapFirst : (a -> Result x b) -> ( a, c ) -> Result x ( b, c )
+combineMapFirst f xy =
+  combineFirst (Tuple.mapFirst f xy)
+
+
 {-| Actually `traverse` on Tuples and Results
+
+    combineMapSecond f ( x, y ) =
+      map (Tuple.pair x) (f y)
+
 -}
 combineMapSecond : (a -> Result x b) -> ( c, a ) -> Result x ( c, b )
-combineMapSecond f ( x, y ) =
-  map (Tuple.pair x) (f y)
+combineMapSecond f xy =
+  combineSecond (Tuple.mapSecond f xy)
 
 
 {-| Actually `bitraverse` on Tuples and Results
+
+    combineMapBoth f g ( x, y ) =
+      map2 Tuple.pair (f x) (g y)
+
 -}
 combineMapBoth : (a -> Result x c) -> (b -> Result x d) -> ( a, b ) -> Result x ( c, d )
-combineMapBoth f g ( x, y ) =
-  map2 Tuple.pair (f x) (g y)
+combineMapBoth f g xy =
+  combineBoth (Tuple.mapBoth f g xy)
 
 
 
@@ -59,9 +84,6 @@ combineMapBoth f g ( x, y ) =
 join : Result x (Result x a) -> Result x a
 join r =
   case r of
-    Err x ->
-      Err x
-    Ok (Err x) ->
-      Err x
-    Ok (Ok a) ->
-      Ok a
+    Err x -> Err x
+    Ok (Err x) -> Err x
+    Ok (Ok a) -> Ok a
