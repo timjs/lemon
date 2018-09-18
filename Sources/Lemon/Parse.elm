@@ -1,11 +1,11 @@
 module Lemon.Parse exposing (parse)
 
+import Helpers.Parser exposing (..)
 import Lemon.Names exposing (Name)
 import Lemon.Syntax.Common exposing (..)
 import Lemon.Syntax.Textual exposing (..)
 import Lemon.Types exposing (BasicType(..))
 import Parser exposing (..)
-import Parser.Extras exposing (parens)
 import Set exposing (Set)
 
 
@@ -341,51 +341,7 @@ basicType =
 
 
 -- Helpers ---------------------------------------------------------------------
-
-
-some : Parser a -> Parser (List a)
-some item =
-  succeed (::)
-    |= item
-    |= many item
-
-
-many : Parser a -> Parser (List a)
-many item =
-  let
-    helper vs =
-      oneOf
-        [ succeed (\v -> Parser.Loop (v :: vs))
-            |= item
-        , succeed <| Parser.Done (List.reverse vs)
-        ]
-  in
-  loop [] helper
-
-
-by : Parser () -> Parser a -> Parser (List a)
-by sep item =
-  let
-    more =
-      succeed identity
-        |. backtrackable sep
-        |= item
-  in
-  succeed (::)
-    |= item
-    |= many more
-
-
-
 -- Symbols --
-
-
-spacy : Parser () -> Parser ()
-spacy item =
-  succeed identity
-    |. spaces
-    |= item
-    |. spaces
 
 
 comma : Parser ()
