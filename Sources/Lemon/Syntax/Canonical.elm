@@ -1,7 +1,6 @@
 module Lemon.Syntax.Canonical exposing
   ( Alternative
   , Atom(..)
-  , Basic
   , Branch
   , Declaration(..)
   , Expression(..)
@@ -14,11 +13,14 @@ module Lemon.Syntax.Canonical exposing
   , Step(..)
   , Task(..)
   , empty
+  , ifThenElse
+  , ok
   )
 
 import Dict exposing (Dict)
-import Lemon.Names exposing (Name)
-import Lemon.Types exposing (Type(..))
+import Lemon.Names exposing (..)
+import Lemon.Syntax.Common exposing (..)
+import Lemon.Types exposing (..)
 
 
 
@@ -72,13 +74,6 @@ type alias Fields a =
   Dict Name a
 
 
-type Basic
-  = Bool Bool
-  | Int Int
-  | Float Float
-  | String String
-
-
 
 -- Flows -----------------------------------------------------------------------
 
@@ -129,9 +124,13 @@ empty : Scope
 empty = Dict.empty
 
 
-mkIf : Expression -> Expression -> Expression -> Expression
-mkIf test true false =
+ifThenElse : Expression -> Expression -> Expression -> Expression
+ifThenElse test true false =
   Case test <|
     [ ( PBasic (Bool True), true )
     , ( PBasic (Bool False), false )
     ]
+
+
+ok : Expression
+ok = Atom (ABasic (Bool True))

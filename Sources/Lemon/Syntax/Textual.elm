@@ -1,7 +1,6 @@
 module Lemon.Syntax.Textual exposing
   ( Alternative
   , Atom(..)
-  , Basic(..)
   , Branch
   , Declaration(..)
   , Expression(..)
@@ -16,6 +15,7 @@ module Lemon.Syntax.Textual exposing
 
 import Helpers.Hole exposing (..)
 import Lemon.Names exposing (..)
+import Lemon.Syntax.Common exposing (..)
 import Lemon.Types exposing (BasicType)
 
 
@@ -72,13 +72,6 @@ type alias Fields a =
   List ( Name, a )
 
 
-type Basic
-  = Bool Bool
-  | Int Int
-  | Float Float
-  | String String
-
-
 
 -- Statements --
 
@@ -132,26 +125,26 @@ type Type
 
 
 -- Traversals ------------------------------------------------------------------
-{-
-   map :
-     (Declaration -> Declaration)
-     -> (Expression -> Expression)
-     -> (Atom -> Atom)
-     -> (Statement -> Statement)
-     -> (Pattern -> Pattern)
-     -> (Type -> Type)
-     -> { d : Declaration -> Declaration, e : Expression -> Expression, a : Atom -> Atom, s : Statement -> Statement, p : Pattern -> Pattern, t : Type -> Type }
-   map d e a s p t =
-     let
-       d_ = hole
-       e_ = hole
-       a_ = hole
-       s_ = hole
-       p_ = hole
-       t_ = hole
-     in
-     { d = d_, e = e_, a = a_, s = s_, p = p_, t = t_ }
--}
+
+
+map :
+  (Declaration -> Declaration)
+  -> (Expression -> Expression)
+  -> (Atom -> Atom)
+  -> (Statement -> Statement)
+  -> (Pattern -> Pattern)
+  -> (Type -> Type)
+  -> { d : Declaration -> Declaration, e : Expression -> Expression, a : Atom -> Atom, s : Statement -> Statement, p : Pattern -> Pattern, t : Type -> Type }
+map d e a s p t =
+  let
+    d_ = hole
+    e_ = hole
+    a_ = hole
+    s_ = hole
+    p_ = hole
+    t_ = hole
+  in
+  { d = d_, e = e_, a = a_, s = s_, p = p_, t = t_ }
 
 
 foldl :
@@ -162,13 +155,18 @@ foldl :
   -> (Statement -> r)
   -> (Pattern -> r)
   -> (Type -> r)
-  -> { d : Declaration -> r, e : Expression -> r, a : Atom -> r, s : Statement -> r, p : Pattern -> r, t : Type -> r }
+  ->
+    { d : Declaration -> r
+    , e : Expression -> r
+    , a : Atom -> r
+    , s : Statement -> r
+    , p : Pattern -> r
+    , t : Type -> r
+    }
 foldl op d e a s p t =
   let
-    -- Shortcuts
+    -- Helpers
     fold = List.foldl op
-    map = List.map
-    concat = List.concat
     combine f g ( x, y ) =
       op (f x) (g y)
     -- Traversals
@@ -176,24 +174,24 @@ foldl op d e a s p t =
       fold (d decl) <|
         case decl of
           Value name1 tipe name2 patts expr ->
-            [ t tipe ] ++ map p patts ++ [ e expr ]
+            [ t tipe ] ++ List.map p patts ++ [ e expr ]
     e_ expr =
       fold (e expr) <|
         case expr of
           Atom atom ->
             [ a atom ]
           Lambda parms body ->
-            map (combine p t) parms ++ [ e body ]
+            List.map (combine p t) parms ++ [ e body ]
           Call func exprs ->
-            [ e func ] ++ map e exprs
+            [ e func ] ++ List.map e exprs
           Let scop body ->
-            map d scop ++ [ e body ]
+            List.map d scop ++ [ e body ]
           Case test alts ->
-            [ e test ] ++ map (combine p e) alts
+            [ e test ] ++ List.map (combine p e) alts
           If test pos neg ->
             [ e test, e pos, e neg ]
           Sequence stmts ->
-            map s stmts
+            List.map s stmts
     a_ atom =
       fold (a atom) <|
         case atom of
@@ -208,7 +206,7 @@ foldl op d e a s p t =
             [ e head, e tail ]
           ANil -> []
           ARecord fields ->
-            map (\( _, expr ) -> e expr) fields
+            List.map (\( _, expr ) -> e expr) fields
     s_ stmt =
       fold (s stmt) <|
         case stmt of
@@ -219,11 +217,11 @@ foldl op d e a s p t =
           SIgnore expr ->
             [ e expr ]
           SPar stmts ->
-            concat <| map (map s) stmts
+            List.concat <| List.map (List.map s) stmts
           SWhen brncs ->
-            map (\( expr, stmts ) -> fold (e expr) (map s stmts)) brncs
+            List.map (\( expr, stmts ) -> fold (e expr) (List.map s stmts)) brncs
           SOn brncs ->
-            map (\( _, ( expr, stmts ) ) -> fold (e expr) (map s stmts)) brncs
+            List.map (\( _, ( expr, stmts ) ) -> fold (e expr) (List.map s stmts)) brncs
           SDone -> []
     p_ patt =
       fold (p patt) <|
@@ -239,7 +237,7 @@ foldl op d e a s p t =
             [ p head, p tail ]
           PNil -> []
           PRecord fields ->
-            map (\( _, inner ) -> p inner) fields
+            List.map (\( _, inner ) -> p inner) fields
           PIgnore -> []
     t_ tipe =
       fold (t tipe) <|
@@ -253,10 +251,46 @@ foldl op d e a s p t =
           TList inner ->
             [ t inner ]
           TRecord fields ->
-            map (\( _, inner ) -> t inner) fields
+            List.map (\( _, inner ) -> t inner) fields
           TTask inner ->
             [ t inner ]
           TArrow left right ->
             [ t left, t right ]
   in
   { d = d_, e = e_, a = a_, s = s_, p = p_, t = t_ }
+
+
+
+{-
+   traverse :
+     (Declaration -> Result x d)
+     -> (Expression -> Result x e)
+     -> (Atom -> Result x a)
+     -> (Statement -> Result x s)
+     -> (Pattern -> Result x p)
+     -> (Type -> Result x t)
+     ->
+       { d : Declaration -> Result x d
+       , e : Expression -> Result x e
+       , a : Atom -> Result x a
+       , s : Statement -> Result x s
+       , p : Pattern -> Result x p
+       , t : Type -> Result x t
+       }
+   traverse d e a s p t =
+     let
+       d_ decl =
+         hole
+       e_ expr =
+         hole
+       a_ atom =
+         hole
+       s_ stmt =
+         hole
+       p_ patt =
+         hole
+       t_ tipe =
+         hole
+     in
+     { d = d_, e = e_, a = a_, s = s_, p = p_, t = t_ }
+-}
