@@ -1,7 +1,9 @@
 module Lemon.Parse exposing (parse)
 
 import Lemon.Names exposing (Name)
+import Lemon.Syntax.Common exposing (..)
 import Lemon.Syntax.Textual exposing (..)
+import Lemon.Types exposing (BasicType(..))
 import Parser exposing (..)
 import Parser.Extras exposing (parens)
 import Set exposing (Set)

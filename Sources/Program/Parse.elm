@@ -70,10 +70,8 @@ view { input, output } =
   let
     parsing =
       case output of
-        Ok mod ->
-          text <| Debug.toString mod
-        Err errors ->
-          handleErrors input errors
+        Ok mod -> text <| Debug.toString mod
+        Err errors -> handleErrors input errors
   in
   form []
     [ textarea
@@ -158,8 +156,7 @@ handleProblem problem =
 showProblem : Parser.Problem -> String
 showProblem problem =
   case problem of
-    Parser.Expecting string ->
-      "expecting " ++ string
+    Parser.Expecting string -> "expecting " ++ string
     Parser.ExpectingInt -> "a decimal integer"
     Parser.ExpectingHex -> "a hexadecimal integer"
     Parser.ExpectingOctal -> "an octal integer"
@@ -167,14 +164,11 @@ showProblem problem =
     Parser.ExpectingFloat -> "a float"
     Parser.ExpectingNumber -> "a number"
     Parser.ExpectingVariable -> "a variable"
-    Parser.ExpectingSymbol symbol ->
-      "the symbol `" ++ symbol ++ "`"
-    Parser.ExpectingKeyword keyword ->
-      "the keyword `" ++ keyword ++ "`"
+    Parser.ExpectingSymbol symbol -> "the symbol `" ++ symbol ++ "`"
+    Parser.ExpectingKeyword keyword -> "the keyword `" ++ keyword ++ "`"
     Parser.ExpectingEnd -> "end of the string"
     Parser.UnexpectedChar -> "something I didn't expect"
-    Parser.Problem string ->
-      string
+    Parser.Problem string -> string
     Parser.BadRepeat -> "whitespace"
 
 

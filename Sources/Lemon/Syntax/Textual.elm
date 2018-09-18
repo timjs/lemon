@@ -11,6 +11,7 @@ module Lemon.Syntax.Textual exposing
   , Scope
   , Statement(..)
   , Type(..)
+  , empty
   )
 
 import Helpers.Hole exposing (..)
@@ -124,6 +125,14 @@ type Type
 
 
 
+-- Init ------------------------------------------------------------------------
+
+
+empty : Scope
+empty = []
+
+
+
 -- Traversals ------------------------------------------------------------------
 
 
@@ -173,89 +182,58 @@ foldl op d e a s p t =
     d_ decl =
       fold (d decl) <|
         case decl of
-          Value name1 tipe name2 patts expr ->
-            [ t tipe ] ++ List.map p patts ++ [ e expr ]
+          Value name1 tipe name2 patts expr -> [ t tipe ] ++ List.map p patts ++ [ e expr ]
     e_ expr =
       fold (e expr) <|
         case expr of
-          Atom atom ->
-            [ a atom ]
-          Lambda parms body ->
-            List.map (combine p t) parms ++ [ e body ]
-          Call func exprs ->
-            [ e func ] ++ List.map e exprs
-          Let scop body ->
-            List.map d scop ++ [ e body ]
-          Case test alts ->
-            [ e test ] ++ List.map (combine p e) alts
-          If test pos neg ->
-            [ e test, e pos, e neg ]
-          Sequence stmts ->
-            List.map s stmts
+          Atom atom -> [ a atom ]
+          Lambda parms body -> List.map (combine p t) parms ++ [ e body ]
+          Call func exprs -> [ e func ] ++ List.map e exprs
+          Let scop body -> List.map d scop ++ [ e body ]
+          Case test alts -> [ e test ] ++ List.map (combine p e) alts
+          If test pos neg -> [ e test, e pos, e neg ]
+          Sequence stmts -> List.map s stmts
     a_ atom =
       fold (a atom) <|
         case atom of
-          ABasic basc ->
-            []
-          AVariable name ->
-            []
-          AJust expr ->
-            [ e expr ]
+          ABasic basc -> []
+          AVariable name -> []
+          AJust expr -> [ e expr ]
           ANothing -> []
-          ACons head tail ->
-            [ e head, e tail ]
+          ACons head tail -> [ e head, e tail ]
           ANil -> []
-          ARecord fields ->
-            List.map (\( _, expr ) -> e expr) fields
+          ARecord fields -> List.map (\( _, expr ) -> e expr) fields
     s_ stmt =
       fold (s stmt) <|
         case stmt of
-          SLet patt expr ->
-            [ p patt, e expr ]
-          SBind patt expr ->
-            [ p patt, e expr ]
-          SIgnore expr ->
-            [ e expr ]
-          SPar stmts ->
-            List.concat <| List.map (List.map s) stmts
-          SWhen brncs ->
-            List.map (\( expr, stmts ) -> fold (e expr) (List.map s stmts)) brncs
-          SOn brncs ->
-            List.map (\( _, ( expr, stmts ) ) -> fold (e expr) (List.map s stmts)) brncs
+          SLet patt expr -> [ p patt, e expr ]
+          SBind patt expr -> [ p patt, e expr ]
+          SIgnore expr -> [ e expr ]
+          SPar stmts -> List.concat <| List.map (List.map s) stmts
+          SWhen brncs -> List.map (\( expr, stmts ) -> fold (e expr) (List.map s stmts)) brncs
+          SOn brncs -> List.map (\( _, ( expr, stmts ) ) -> fold (e expr) (List.map s stmts)) brncs
           SDone -> []
     p_ patt =
       fold (p patt) <|
         case patt of
-          PBasic basic ->
-            []
-          PVariable name ->
-            []
-          PJust inner ->
-            [ p inner ]
+          PBasic basic -> []
+          PVariable name -> []
+          PJust inner -> [ p inner ]
           PNothing -> []
-          PCons head tail ->
-            [ p head, p tail ]
+          PCons head tail -> [ p head, p tail ]
           PNil -> []
-          PRecord fields ->
-            List.map (\( _, inner ) -> p inner) fields
+          PRecord fields -> List.map (\( _, inner ) -> p inner) fields
           PIgnore -> []
     t_ tipe =
       fold (t tipe) <|
         case tipe of
-          TBasic basic ->
-            []
-          TVariable name ->
-            []
-          TMaybe inner ->
-            [ t inner ]
-          TList inner ->
-            [ t inner ]
-          TRecord fields ->
-            List.map (\( _, inner ) -> t inner) fields
-          TTask inner ->
-            [ t inner ]
-          TArrow left right ->
-            [ t left, t right ]
+          TBasic basic -> []
+          TVariable name -> []
+          TMaybe inner -> [ t inner ]
+          TList inner -> [ t inner ]
+          TRecord fields -> List.map (\( _, inner ) -> t inner) fields
+          TTask inner -> [ t inner ]
+          TArrow left right -> [ t left, t right ]
   in
   { d = d_, e = e_, a = a_, s = s_, p = p_, t = t_ }
 
