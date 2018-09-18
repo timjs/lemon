@@ -1,6 +1,6 @@
 module Helpers.Pretty exposing (brackets, lines, softlines, words)
 
-import Helpers.Function exposing (flip)
+import Basics.Extra exposing (flip)
 import Pretty exposing (..)
 
 

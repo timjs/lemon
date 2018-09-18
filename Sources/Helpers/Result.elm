@@ -9,12 +9,9 @@ module Helpers.Result exposing
   , join
   )
 
+import Basics.Extra exposing (swap)
 import Result exposing (..)
 import Result.Extra exposing (..)
-
-
-swap ( x, y ) =
-  ( y, x )
 
 
 

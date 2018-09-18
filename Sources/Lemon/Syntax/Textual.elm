@@ -134,26 +134,26 @@ empty = []
 
 
 -- Traversals ------------------------------------------------------------------
-
-
-map :
-  (Declaration -> Declaration)
-  -> (Expression -> Expression)
-  -> (Atom -> Atom)
-  -> (Statement -> Statement)
-  -> (Pattern -> Pattern)
-  -> (Type -> Type)
-  -> { d : Declaration -> Declaration, e : Expression -> Expression, a : Atom -> Atom, s : Statement -> Statement, p : Pattern -> Pattern, t : Type -> Type }
-map d e a s p t =
-  let
-    d_ = hole
-    e_ = hole
-    a_ = hole
-    s_ = hole
-    p_ = hole
-    t_ = hole
-  in
-  { d = d_, e = e_, a = a_, s = s_, p = p_, t = t_ }
+{-
+   map :
+     (Declaration -> Declaration)
+     -> (Expression -> Expression)
+     -> (Atom -> Atom)
+     -> (Statement -> Statement)
+     -> (Pattern -> Pattern)
+     -> (Type -> Type)
+     -> { d : Declaration -> Declaration, e : Expression -> Expression, a : Atom -> Atom, s : Statement -> Statement, p : Pattern -> Pattern, t : Type -> Type }
+   map d e a s p t =
+     let
+       d_ = hole
+       e_ = hole
+       a_ = hole
+       s_ = hole
+       p_ = hole
+       t_ = hole
+     in
+     { d = d_, e = e_, a = a_, s = s_, p = p_, t = t_ }
+-}
 
 
 foldl :
@@ -174,10 +174,12 @@ foldl :
     }
 foldl op d e a s p t =
   let
+    --
     -- Helpers
     fold = List.foldl op
     combine f g ( x, y ) =
       op (f x) (g y)
+    --
     -- Traversals
     d_ decl =
       fold (d decl) <|
