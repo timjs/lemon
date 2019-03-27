@@ -15,10 +15,9 @@ module Language.Lemon.Syntax.Common
 import Basics
 
 import Data.List (List)
-import Data.List as List
-
 import Language.Lemon.Names (Name, isLower, isUpper)
 
+import Data.List as List
 
 
 -- STATEMENTS ------------------------------------------------------------------
@@ -32,9 +31,78 @@ data Stmt e
   | When (List { predicate :: e, body :: List (Stmt e) })
   | Done
 
-derive instance genericCmd :: Generic (Stmt e) _
-derive instance functorCmd :: Functor Stmt
-instance showCmd :: Show e => Show (Stmt e) where show = genericShow
+
+type Guarded r e = { predicate :: e, body :: List (Stmt e) | r }
+
+
+
+-- ATOMS -----------------------------------------------------------------------
+
+
+type Fields a = List { name :: Name, value :: a }
+
+
+data Atom e
+  = Prim Prim
+  | Var Name
+  | None
+  | Some e
+  | List (List e)
+  | Record (Fields e)
+
+
+data Prim
+  = B Boolean
+  | I Int
+  | F Number
+  | S String
+
+
+
+-- PATTERNS --------------------------------------------------------------------
+
+
+data Pattern
+  = PPrim Prim
+  | PVar Name
+  | PSome Pattern
+  | PNone
+  | PCons Pattern Pattern
+  | PNil
+  | PRecord (Fields Pattern)
+  | PIgnore
+
+
+--NOTE: Leave these types as tuples so that we can use the standard Foldable and Traversable instances
+
+type Parameter = Pattern ** Type
+
+type Alternative e = Pattern ** e
+
+
+
+-- TYPES -----------------------------------------------------------------------
+
+
+data Type
+  = TPrim PrimType
+  | TVar Name
+  | TOption Type
+  | TList Type
+  | TRecord (Fields Type)
+  | TTask Type
+  | TArrow Type Type
+
+
+data PrimType
+  = TBool
+  | TInt
+  | TFloat
+  | TString
+
+
+
+-- FOLDABLE & TRAVERSABLE ------------------------------------------------------
 
 
 instance foldableCmd :: Foldable Stmt where
@@ -61,9 +129,6 @@ instance traversableCmd :: Traversable Stmt where
   traverse = traverseDefault
 
 
-type Guarded r e = { predicate :: e, body :: List (Stmt e) | r }
-
-
 foldMapGuarded :: forall e r m. Monoid m => (e -> m) -> Guarded r e -> m
 foldMapGuarded f { predicate: e, body: es } = f e <> foldMap (foldMap f) es
 
@@ -83,25 +148,6 @@ sequenceWhen { predicate: e, body: es } =
   -- where
   --   es' = sequence (map sequence es)
   --
-
-
--- ATOMS -----------------------------------------------------------------------
-
-
-type Fields a = List { name :: Name, value :: a }
-
-
-data Atom e
-  = Prim Prim
-  | Var Name
-  | None
-  | Some e
-  | List (List e)
-  | Record (Fields e)
-
-derive instance genericAtom :: Generic (Atom e) _
-derive instance functorAtom :: Functor Atom
-instance showAtom :: Show e => Show (Atom e) where show = genericShow
 
 
 instance foldableAtom :: Foldable Atom where
@@ -129,61 +175,26 @@ instance traversableAtom :: Traversable Atom where
   traverse = traverseDefault
 
 
-data Prim
-  = B Boolean
-  | I Int
-  | F Number
-  | S String
+
+-- BOILERPLATE -----------------------------------------------------------------
+
+
+derive instance genericCmd :: Generic (Stmt e) _
+derive instance functorCmd :: Functor Stmt
+instance showCmd :: Show e => Show (Stmt e) where show = genericShow
+
+derive instance genericAtom :: Generic (Atom e) _
+derive instance functorAtom :: Functor Atom
+instance showAtom :: Show e => Show (Atom e) where show = genericShow
 
 derive instance genericPrim :: Generic Prim _
 instance showPrim :: Show Prim where show = genericShow
 
-
-
--- PATTERNS --------------------------------------------------------------------
-
-
-data Pattern
-  = PPrim Prim
-  | PVar Name
-  | PSome Pattern
-  | PNone
-  | PCons Pattern Pattern
-  | PNil
-  | PRecord (Fields Pattern)
-  | PIgnore
-
 derive instance genericPattern :: Generic Pattern _
 instance showPattern :: Show Pattern where show x = genericShow x
 
-
---NOTE: Leave these types as tuples so that we can use the standard Foldable and Traversable instances
-type Parameter = Pattern ** Type
-type Alternative e = Pattern ** e
-
-
-
--- TYPES -----------------------------------------------------------------------
-
-
-data Type
-  = TPrim PrimType
-  | TVar Name
-  | TOption Type
-  | TList Type
-  | TRecord (Fields Type)
-  | TTask Type
-  | TArrow Type Type
-
 derive instance typeGeneric :: Generic Type _
 instance showType :: Show Type where show x = genericShow x
-
-
-data PrimType
-  = TBool
-  | TInt
-  | TFloat
-  | TString
 
 derive instance genericPrimType :: Generic PrimType _
 instance showPrimType :: Show PrimType where show = genericShow

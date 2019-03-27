@@ -13,10 +13,8 @@ import Basics
 
 import Data.List (List(..))
 import Data.Map (Map)
-import Data.Map as Map
-import Data.List as List
-
 import Language.Lemon.Syntax.Common (Alternative, Atom, Basic(..), Name, Parameter, Pattern(..), Statement, Type(..))
+
 import Language.Lemon.Syntax.Abstract as Abstract
 
 
