@@ -1,4 +1,4 @@
-module Language.Lemon.Name
+module Language.Lemon.Names
   ( Name
   , isLower
   , isUpper

@@ -21,9 +21,7 @@ import Language.Lemon.Syntax.Abstract as Abstract
 
 
 
--- DATA ------------------------------------------------------------------------
-
--- DECLARATIONS --
+-- DECLARATIONS ----------------------------------------------------------------
 
 
 type Scope = Map Name Declaration
@@ -42,7 +40,7 @@ data Declaration
 
 
 
--- EXPRESSIONS --
+-- EXPRESSIONS -----------------------------------------------------------------
 
 
 data Expression
@@ -105,4 +103,4 @@ doExpression (Abstract.Call func args)     = foldl Call <$> doExpression func <*
 doExpression (Abstract.Let scope expr)     = Let <$> doScope scope <*> doExpression expr
 doExpression (Abstract.Case test alts)     = Case <$> doExpression test <*> sequence (sequence << map doExpression <$> alts)
 doExpression (Abstract.If test pos neg)    = mkIf <$> doExpression test <*> doExpression pos <*> doExpression neg
-doExpression (Abstract.Sequence stmts)     = Sequence <$> sequence (sequence <$> map doExpression <$> stmts)
+doExpression (Abstract.Sequence stmts)     = Sequence <$> sequence (sequence << map doExpression <$> stmts)

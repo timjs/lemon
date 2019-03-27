@@ -8,7 +8,7 @@ module Language.Lemon.Syntax.Common
   , Pattern(..)
   , Statement(..)
   , Type(..)
-  , module Language.Lemon.Name
+  , module Language.Lemon.Names
   ) where
 
 
@@ -17,7 +17,7 @@ import Basics
 import Data.List (List)
 import Data.List as List
 
-import Language.Lemon.Name (Name, isLower, isUpper)
+import Language.Lemon.Names (Name, isLower, isUpper)
 
 
 
@@ -82,15 +82,14 @@ sequenceOn { action, predicate: e, body: es } = ado
   in { action, predicate, body }
 
 
-sequenceWhen :: forall e f. Applicative f =>
-  Guarded () (f e) -> f (Guarded () e)
-sequenceWhen { predicate: e, body: es } = ado
-  predicate <- e
-  body <- es'
-  in { predicate, body }
-  where
-    es' = sequence (map sequence es)
-
+sequenceWhen :: forall e f. Applicative f => Guarded () (f e) -> f (Guarded () e)
+sequenceWhen { predicate: e, body: es } = { predicate: _, body: _ } <$> e <*> sequence (map sequence es)
+  -- predicate <- e
+  -- body <- es'
+  -- in { predicate, body }
+  -- where
+  --   es' = sequence (map sequence es)
+  --
 
 
 -- ATOMS -----------------------------------------------------------------------
