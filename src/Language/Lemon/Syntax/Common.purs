@@ -1,12 +1,12 @@
 module Language.Lemon.Syntax.Common
   ( Alternative
   , Atom(..)
-  , Basic(..)
-  , BasicType(..)
+  , Prim(..)
+  , PrimType(..)
   , Fields
   , Parameter
   , Pattern(..)
-  , Statement(..)
+  , Stmt(..)
   , Type(..)
   , module Language.Lemon.Names
   ) where
@@ -24,24 +24,22 @@ import Language.Lemon.Names (Name, isLower, isUpper)
 -- STATEMENTS ------------------------------------------------------------------
 
 
-data Statement e
+data Stmt e
   = Set Pattern e
   | Bind Pattern e
-  | Do e
-  | Par (List (List (Statement e)))
-  | On (List { action :: Name, predicate :: e, body :: List (Statement e) })
-  | When (List { predicate :: e, body :: List (Statement e) })
+  | Par (List (List (Stmt e)))
+  | On (List { action :: Name, predicate :: e, body :: List (Stmt e) })
+  | When (List { predicate :: e, body :: List (Stmt e) })
   | Done
 
-derive instance genericStatement :: Generic (Statement e) _
-derive instance functorStatement :: Functor Statement
-instance showStatement :: Show e => Show (Statement e) where show = genericShow
+derive instance genericCmd :: Generic (Stmt e) _
+derive instance functorCmd :: Functor Stmt
+instance showCmd :: Show e => Show (Stmt e) where show = genericShow
 
 
-instance foldableStatement :: Foldable Statement where
+instance foldableCmd :: Foldable Stmt where
   foldMap f (Set _ e)  = f e
   foldMap f (Bind _ e) = f e
-  foldMap f (Do e)     = f e
   foldMap f (Par bs)   = foldMap (foldMap (foldMap f)) bs
   foldMap f (On bs)    = foldMap (foldMapGuarded f) bs
   foldMap f (When bs)  = foldMap (foldMapGuarded f) bs
@@ -52,10 +50,9 @@ instance foldableStatement :: Foldable Statement where
   foldr f = foldrDefault f
 
 
-instance traversableStatement :: Traversable Statement where
+instance traversableCmd :: Traversable Stmt where
   sequence (Set p e)  = Set p <$> e
   sequence (Bind p e) = Bind p <$> e
-  sequence (Do e)     = Do <$> e
   sequence (Par bs)   = Par <$> sequence (map sequence (map (map sequence) bs))
   sequence (On bs)    = On <$> sequence (map sequenceOn bs)
   sequence (When bs)  = When <$> sequence (map sequenceWhen bs)
@@ -64,7 +61,7 @@ instance traversableStatement :: Traversable Statement where
   traverse = traverseDefault
 
 
-type Guarded r e = { predicate :: e, body :: List (Statement e) | r }
+type Guarded r e = { predicate :: e, body :: List (Stmt e) | r }
 
 
 foldMapGuarded :: forall e r m. Monoid m => (e -> m) -> Guarded r e -> m
@@ -95,8 +92,8 @@ type Fields a = List { name :: Name, value :: a }
 
 
 data Atom e
-  = Basic Basic
-  | Variable Name
+  = Prim Prim
+  | Var Name
   | None
   | Some e
   | List (List e)
@@ -119,12 +116,12 @@ instance foldableAtom :: Foldable Atom where
 
 
 instance traversableAtom :: Traversable Atom where
-  sequence (Basic b)    = pure $ Basic b
-  sequence (Variable x) = pure $ Variable x
-  sequence (None)       = pure $ None
-  sequence (Some e)     = Some <$> e
-  sequence (List es)    = List <$> sequence es
-  sequence (Record fs)  = Record << List.zipWith { name: _, value: _ } names <$> sequence values
+  sequence (Prim b)    = pure $ Prim b
+  sequence (Var x)     = pure $ Var x
+  sequence (None)      = pure $ None
+  sequence (Some e)    = Some <$> e
+  sequence (List es)   = List <$> sequence es
+  sequence (Record fs) = Record << List.zipWith { name: _, value: _ } names <$> sequence values
     where
       names = map _.name fs
       values = map _.value fs
@@ -132,14 +129,14 @@ instance traversableAtom :: Traversable Atom where
   traverse = traverseDefault
 
 
-data Basic
-  = Bool Boolean
-  | Int Int
-  | Float Number
-  | String String
+data Prim
+  = B Boolean
+  | I Int
+  | F Number
+  | S String
 
-derive instance genericBasic :: Generic Basic _
-instance showBasic :: Show Basic where show = genericShow
+derive instance genericPrim :: Generic Prim _
+instance showPrim :: Show Prim where show = genericShow
 
 
 
@@ -147,8 +144,8 @@ instance showBasic :: Show Basic where show = genericShow
 
 
 data Pattern
-  = PBasic Basic
-  | PVariable Name
+  = PPrim Prim
+  | PVar Name
   | PSome Pattern
   | PNone
   | PCons Pattern Pattern
@@ -170,8 +167,8 @@ type Alternative e = Pattern ** e
 
 
 data Type
-  = TBasic BasicType
-  | TVariable Name
+  = TPrim PrimType
+  | TVar Name
   | TOption Type
   | TList Type
   | TRecord (Fields Type)
@@ -182,11 +179,11 @@ derive instance typeGeneric :: Generic Type _
 instance showType :: Show Type where show x = genericShow x
 
 
-data BasicType
+data PrimType
   = TBool
   | TInt
   | TFloat
   | TString
 
-derive instance genericBasicType :: Generic BasicType _
-instance showBasicType :: Show BasicType where show = genericShow
+derive instance genericPrimType :: Generic PrimType _
+instance showPrimType :: Show PrimType where show = genericShow

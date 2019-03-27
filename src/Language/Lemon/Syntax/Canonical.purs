@@ -1,7 +1,7 @@
 module Language.Lemon.Syntax.Canonical
-  ( Declaration(..)
+  ( Decl(..)
   , Error(..)
-  , Expression(..)
+  , Expr(..)
   , Module(..)
   , Scope
   , canonicalise
@@ -24,7 +24,7 @@ import Language.Lemon.Syntax.Abstract as Abstract
 -- DECLARATIONS ----------------------------------------------------------------
 
 
-type Scope = Map Name Declaration
+type Scope = Map Name Decl
 
 
 empty :: Scope
@@ -35,24 +35,24 @@ data Module
   = Module Scope
 
 
-data Declaration
-  = Value Type Expression
+data Decl
+  = Value Type Expr
 
 
 
 -- EXPRESSIONS -----------------------------------------------------------------
 
 
-data Expression
-  = Atom (Atom Expression)
-  | Lambda Parameter Expression
-  | Call Expression Expression
-  | Let Scope Expression
-  | Case Expression (List (Alternative Expression))
-  | Sequence (List (Statement Expression))
+data Expr
+  = Atom (Atom Expr)
+  | Lam Parameter Expr
+  | App Expr Expr
+  | Let Scope Expr
+  | Case Expr (List (Alternative Expr))
+  | Seq (List (Statement Expr))
 
 
-mkIf :: Expression -> Expression -> Expression -> Expression
+mkIf :: Expr -> Expr -> Expr -> Expr
 mkIf test pos neg =
   Case test $ List.fromFoldable
     [ PBasic (Bool true) ** pos
@@ -77,31 +77,31 @@ canonicalise (Abstract.Module scope) = Module <$> doScope scope
 
 --XXX: why is eta-expansion needed here???
 doScope :: Abstract.Scope -> Either Error Scope
-doScope scope = map doDeclaration scope # sequence # map Map.fromFoldable
+doScope scope = map doDecl scope # sequence # map Map.fromFoldable
 
 
-doDeclaration :: Abstract.Declaration -> Either Error (Name ** Declaration)
-doDeclaration (Abstract.Value name1 typ name2 params body)
+doDecl :: Abstract.Decl -> Either Error (Name ** Decl)
+doDecl (Abstract.Value name1 typ name2 params body)
   | name1 == name2 = (name1 ** _) << Value typ <$> doBody typ params body
   | otherwise      = Left $ BadNaming name1 name2
 
 
-doBody :: Type -> List Pattern -> Abstract.Expression -> Either Error Expression
-doBody typ params body = doExpression body >>= go typ params
+doBody :: Type -> List Pattern -> Abstract.Expr -> Either Error Expr
+doBody typ params body = doExpr body >>= go typ params
   where
-    go :: Type -> List Pattern -> Expression -> Either Error Expression
-    go (TArrow t ts) (Cons p ps) expr = go ts ps $ Lambda (p ** t) expr
+    go :: Type -> List Pattern -> Expr -> Either Error Expr
+    go (TArrow t ts) (Cons p ps) expr = go ts ps $ Lam (p ** t) expr
     go _             (Cons p ps) _    = Left $ BadParameters typ params
     go (TArrow t ts) (Nil)       _    = Left $ BadParameters typ params
     go _             (Nil)       expr = Right $ expr
 
 
-doExpression :: Abstract.Expression -> Either Error Expression
-doExpression = case _ of
-  Abstract.Atom atom          -> Atom <$> sequence (map doExpression atom)
-  Abstract.Lambda params expr -> foldr Lambda <$> doExpression expr <*> pure params
-  Abstract.Call func args     -> foldl Call <$> doExpression func <*> sequence (doExpression <$> args)
-  Abstract.Let scope expr     -> Let <$> doScope scope <*> doExpression expr
-  Abstract.Case test alts     -> Case <$> doExpression test <*> sequence (sequence << map doExpression <$> alts)
-  Abstract.If test pos neg    -> mkIf <$> doExpression test <*> doExpression pos <*> doExpression neg
-  Abstract.Sequence stmts     -> Sequence <$> sequence (sequence << map doExpression <$> stmts)
+doExpr :: Abstract.Expr -> Either Error Expr
+doExpr = case _ of
+  Abstract.Atom atom       -> Atom <$> sequence (map doExpr atom)
+  Abstract.Lam params expr -> foldr Lam <$> doExpr expr <*> pure params
+  Abstract.App func args   -> foldl App <$> doExpr func <*> sequence (doExpr <$> args)
+  Abstract.Let scope expr  -> Let <$> doScope scope <*> doExpr expr
+  Abstract.Case test alts  -> Case <$> doExpr test <*> sequence (sequence << map doExpr <$> alts)
+  Abstract.If test pos neg -> mkIf <$> doExpr test <*> doExpr pos <*> doExpr neg
+  Abstract.Seq stmts       -> Seq <$> sequence (sequence << map doExpr <$> stmts)
