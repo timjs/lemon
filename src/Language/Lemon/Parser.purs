@@ -13,7 +13,7 @@ import Data.String.CodeUnits as String
 import Data.Number as Number
 
 import Text.Parsing.StringParser (Parser, fail, try)
-import Text.Parsing.StringParser.String (anyChar, anyDigit, anyLetter, char, eof, lowerCaseChar, skipSpaces, string, upperCaseChar)
+import Text.Parsing.StringParser.CodeUnits (anyChar, anyDigit, anyLetter, char, eof, lowerCaseChar, skipSpaces, string, upperCaseChar)
 import Text.Parsing.StringParser.Combinators (between, choice, fix, many, many1, manyTill, option, sepBy)
 
 import Language.Lemon.Syntax.Abstract (Declaration(..), Expression(..), Module(..), Scope)
