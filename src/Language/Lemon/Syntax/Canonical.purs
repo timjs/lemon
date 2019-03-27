@@ -55,8 +55,8 @@ data Expression
 mkIf :: Expression -> Expression -> Expression -> Expression
 mkIf test pos neg =
   Case test $ List.fromFoldable
-    [ PBasic (Bool true): pos
-    , PBasic (Bool false): neg
+    [ PBasic (Bool true) ** pos
+    , PBasic (Bool false) ** neg
     ]
 
 
@@ -80,9 +80,9 @@ doScope :: Abstract.Scope -> Either Error Scope
 doScope scope = map doDeclaration scope # sequence # map Map.fromFoldable
 
 
-doDeclaration :: Abstract.Declaration -> Either Error (Tuple Name Declaration)
+doDeclaration :: Abstract.Declaration -> Either Error (Name ** Declaration)
 doDeclaration (Abstract.Value name1 typ name2 params body)
-  | name1 == name2 = Tuple name1 << Value typ <$> doBody typ params body
+  | name1 == name2 = (name1 ** _) << Value typ <$> doBody typ params body
   | otherwise      = Left $ BadNaming name1 name2
 
 
@@ -90,17 +90,18 @@ doBody :: Type -> List Pattern -> Abstract.Expression -> Either Error Expression
 doBody typ params body = doExpression body >>= go typ params
   where
     go :: Type -> List Pattern -> Expression -> Either Error Expression
-    go (TArrow t ts) (Cons p ps) expr = go ts ps $ Lambda (p : t) expr
+    go (TArrow t ts) (Cons p ps) expr = go ts ps $ Lambda (p ** t) expr
     go _             (Cons p ps) _    = Left $ BadParameters typ params
     go (TArrow t ts) (Nil)       _    = Left $ BadParameters typ params
     go _             (Nil)       expr = Right $ expr
 
 
 doExpression :: Abstract.Expression -> Either Error Expression
-doExpression (Abstract.Atom atom)          = Atom <$> sequence (map doExpression atom)
-doExpression (Abstract.Lambda params expr) = foldr Lambda <$> doExpression expr <*> pure params
-doExpression (Abstract.Call func args)     = foldl Call <$> doExpression func <*> sequence (doExpression <$> args)
-doExpression (Abstract.Let scope expr)     = Let <$> doScope scope <*> doExpression expr
-doExpression (Abstract.Case test alts)     = Case <$> doExpression test <*> sequence (sequence << map doExpression <$> alts)
-doExpression (Abstract.If test pos neg)    = mkIf <$> doExpression test <*> doExpression pos <*> doExpression neg
-doExpression (Abstract.Sequence stmts)     = Sequence <$> sequence (sequence << map doExpression <$> stmts)
+doExpression = case _ of
+  Abstract.Atom atom          -> Atom <$> sequence (map doExpression atom)
+  Abstract.Lambda params expr -> foldr Lambda <$> doExpression expr <*> pure params
+  Abstract.Call func args     -> foldl Call <$> doExpression func <*> sequence (doExpression <$> args)
+  Abstract.Let scope expr     -> Let <$> doScope scope <*> doExpression expr
+  Abstract.Case test alts     -> Case <$> doExpression test <*> sequence (sequence << map doExpression <$> alts)
+  Abstract.If test pos neg    -> mkIf <$> doExpression test <*> doExpression pos <*> doExpression neg
+  Abstract.Sequence stmts     -> Sequence <$> sequence (sequence << map doExpression <$> stmts)

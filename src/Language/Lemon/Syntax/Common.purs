@@ -35,10 +35,7 @@ data Statement e
 
 derive instance genericStatement :: Generic (Statement e) _
 derive instance functorStatement :: Functor Statement
-
-
-instance showStatement :: Show e => Show (Statement e) where
-  show = genericShow
+instance showStatement :: Show e => Show (Statement e) where show = genericShow
 
 
 instance foldableStatement :: Foldable Statement where
@@ -70,20 +67,19 @@ instance traversableStatement :: Traversable Statement where
 type Guarded r e = { predicate :: e, body :: List (Statement e) | r }
 
 
-foldMapGuarded :: forall e r m. Monoid m =>
-  (e -> m) -> Guarded r e -> m
+foldMapGuarded :: forall e r m. Monoid m => (e -> m) -> Guarded r e -> m
 foldMapGuarded f { predicate: e, body: es } = f e <> foldMap (foldMap f) es
 
 
-sequenceOn :: forall e f. Applicative f =>
-  Guarded (action :: Name) (f e) -> f (Guarded (action :: Name) e)
+sequenceOn :: forall e f. Applicative f => Guarded (action :: Name) (f e) -> f (Guarded (action :: Name) e)
 sequenceOn { action, predicate: e, body: es } = ado
   { predicate, body } <- sequenceWhen { predicate: e, body: es }
   in { action, predicate, body }
 
 
 sequenceWhen :: forall e f. Applicative f => Guarded () (f e) -> f (Guarded () e)
-sequenceWhen { predicate: e, body: es } = { predicate: _, body: _ } <$> e <*> sequence (map sequence es)
+sequenceWhen { predicate: e, body: es } =
+  { predicate: _, body: _ } <$> e <*> sequence (map sequence es)
   -- predicate <- e
   -- body <- es'
   -- in { predicate, body }
@@ -108,10 +104,7 @@ data Atom e
 
 derive instance genericAtom :: Generic (Atom e) _
 derive instance functorAtom :: Functor Atom
-
-
-instance showAtom :: Show e => Show (Atom e) where
-  show = genericShow
+instance showAtom :: Show e => Show (Atom e) where show = genericShow
 
 
 instance foldableAtom :: Foldable Atom where
@@ -146,10 +139,7 @@ data Basic
   | String String
 
 derive instance genericBasic :: Generic Basic _
-
-
-instance showBasic :: Show Basic where
-  show = genericShow
+instance showBasic :: Show Basic where show = genericShow
 
 
 
@@ -167,16 +157,12 @@ data Pattern
   | PIgnore
 
 derive instance genericPattern :: Generic Pattern _
+instance showPattern :: Show Pattern where show x = genericShow x
 
 
-instance showPattern :: Show Pattern where
-  show x = genericShow x
-
-
-type Parameter = Tuple Pattern Type
-
-
-type Alternative e = Tuple Pattern e
+--NOTE: Leave these types as tuples so that we can use the standard Foldable and Traversable instances
+type Parameter = Pattern ** Type
+type Alternative e = Pattern ** e
 
 
 
@@ -193,10 +179,7 @@ data Type
   | TArrow Type Type
 
 derive instance typeGeneric :: Generic Type _
-
-
-instance showType :: Show Type where
-  show x = genericShow x
+instance showType :: Show Type where show x = genericShow x
 
 
 data BasicType
@@ -206,7 +189,4 @@ data BasicType
   | TString
 
 derive instance genericBasicType :: Generic BasicType _
-
-
-instance showBasicType :: Show BasicType where
-  show = genericShow
+instance showBasicType :: Show BasicType where show = genericShow
