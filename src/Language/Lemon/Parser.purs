@@ -3,21 +3,19 @@ module Language.Lemon.Parser
   ) where
 
 
-import Basics hiding (between)
+import Preload hiding (between)
+import Language.Lemon.Syntax.Abstract
 
-import Data.Array as Array
-import Data.Int as Int
 import Data.List (List(..))
-import Data.List.NonEmpty as NonEmpty
-import Data.String.CodeUnits as String
-import Data.Number as Number
-
 import Text.Parsing.StringParser (Parser, fail, try)
 import Text.Parsing.StringParser.CodeUnits (anyChar, anyDigit, anyLetter, char, eof, lowerCaseChar, skipSpaces, string, upperCaseChar)
 import Text.Parsing.StringParser.Combinators (between, choice, fix, many, many1, manyTill, option, sepBy)
 
-import Language.Lemon.Syntax.Abstract (Declaration(..), Expression(..), Module(..), Scope)
-import Language.Lemon.Syntax.Common (Alternative, Atom(..), Basic(..), BasicType(..), Fields, Name, Parameter, Pattern(..), Statement(..), Type(..))
+import Data.Array as Array
+import Data.Int as Int
+import Data.List.NonEmpty as NonEmpty
+import Data.String.CodeUnits as String
+import Data.Number as Number
 
 
 
@@ -35,7 +33,7 @@ scope = fix \self ->
   by semicolon (declaration self)
 
 
-declaration :: Parser Scope -> Parser Declaration
+declaration :: Parser Scope -> Parser Decl
 declaration inner =
   Value
     <$> lower <* colon
@@ -49,12 +47,12 @@ declaration inner =
 -- EXPRESSIONS -----------------------------------------------------------------
 
 
-expression :: Parser Scope -> Parser Expression
+expression :: Parser Scope -> Parser Expr
 expression inner = fix \self ->
   choice
     [ Atom
         <$> atom self
-    , Lambda <$ char '\\' <* spaces
+    , Lam <$ char '\\' <* spaces
         <*> by spaces parameter <* arrow
         <*> self
     , Let <$ keyword "let" <* spaces
@@ -67,7 +65,7 @@ expression inner = fix \self ->
         <*> self <* spaces <* keyword "then" <* spaces
         <*> self <* spaces <* keyword "else" <* spaces
         <*> self
-    , Sequence <$ keyword "do" <* spaces
+    , Seq <$ keyword "do" <* spaces
         <*> by semicolon (statement self)
     , parens self
     ]
@@ -75,26 +73,26 @@ expression inner = fix \self ->
   where
     maybeCall self expr =
       choice
-        [ Call expr <$ try spaces <*> by spaces self
+        [ App expr <$ try spaces <*> by spaces self
         , pure expr
         ]
 
 
 parameter :: Parser Parameter
 parameter =
-  Tuple
+  (**)
     <$> pattern <* colon
     <*> type_
 
 
-alternative :: Parser Expression -> Parser (Alternative Expression)
+alternative :: Parser Expr -> Parser (Alternative Expr)
 alternative inner =
-  Tuple
+  (**)
     <$> pattern <* arrow
     <*> inner
 
 
-statement :: Parser Expression -> Parser (Statement Expression)
+statement :: Parser Expr -> Parser (Stmt Expr)
 statement inner =
   choice
     [ Set <$ keyword "let" <* spaces
@@ -118,19 +116,17 @@ statement inner =
     , Bind
         <$> pattern <* arrow
         <*> inner
-    , Do
-        <$> inner
     ]
 
 
 -- ATOMS -----------------------------------------------------------------------
 
 
-atom :: Parser Expression -> Parser (Atom Expression)
+atom :: Parser Expr -> Parser (Atom Expr)
 atom inner =
   choice
-    [ Basic <$> basic
-    , Variable <$> lower
+    [ Prim <$> basic
+    , Var <$> lower
     , Some <$ keyword "Some" <* spaces <*> inner
     , None <$ keyword "None"
     , List <$> list inner
@@ -138,14 +134,14 @@ atom inner =
     ]
 
 
-basic :: Parser Basic
+basic :: Parser Prim
 basic =
   choice
-    [ Bool true <$ keyword "True"
-    , Bool false <$ keyword "False"
-    , Int <$> try int --NOTE: ints are like floats, we need to backtrack here
-    , Float <$> float
-    , String <$> doublequoted
+    [ B true <$ keyword "True"
+    , B false <$ keyword "False"
+    , I <$> try int --NOTE: ints are like floats, we need to backtrack here
+    , F <$> float
+    , S <$> doublequoted
     ]
 
 
@@ -194,8 +190,8 @@ record sep item = between (char '{' <* spaces) (spaces *> char '}') $ by comma e
 pattern :: Parser Pattern
 pattern = fix \self ->
   choice
-    [ PBasic <$> basic
-    , PVariable <$> lower
+    [ PPrim <$> basic
+    , PVar <$> lower
     , PSome <$ keyword "Some" <* spaces <*> self
     , PNone <$ keyword "None"
     , PNil <$ string "[]"
@@ -219,8 +215,8 @@ pattern = fix \self ->
 type_ :: Parser Type
 type_ = fix \self ->
   choice
-    [ TBasic <$> basicType
-    , TVariable <$> universal
+    [ TPrim <$> basicType
+    , TVar <$> universal
     , TOption <$ keyword "option" <* spaces <*> self
     , TList <$ keyword "list" <* spaces <*> self
     , TRecord <$> record colon self
@@ -236,7 +232,7 @@ type_ = fix \self ->
         ]
 
 
-basicType :: Parser BasicType
+basicType :: Parser PrimType
 basicType =
   choice
     [ TBool <$ keyword "bool"

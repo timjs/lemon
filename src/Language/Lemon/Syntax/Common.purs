@@ -12,12 +12,13 @@ module Language.Lemon.Syntax.Common
   ) where
 
 
-import Basics
+import Preload
 
 import Data.List (List)
 import Language.Lemon.Names (Name, isLower, isUpper)
 
 import Data.List as List
+
 
 
 -- STATEMENTS ------------------------------------------------------------------

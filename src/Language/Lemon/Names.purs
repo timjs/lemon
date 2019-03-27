@@ -5,7 +5,7 @@ module Language.Lemon.Names
   ) where
 
 
-import Basics
+import Preload
 
 import Data.String.CodeUnits as String
 import Data.Char.Unicode as Char

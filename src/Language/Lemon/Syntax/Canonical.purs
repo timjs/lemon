@@ -6,15 +6,18 @@ module Language.Lemon.Syntax.Canonical
   , Scope
   , canonicalise
   , empty
+  , module Language.Lemon.Syntax.Common
   ) where
 
 
-import Basics
+import Preload
+import Language.Lemon.Syntax.Common
 
 import Data.List (List(..))
 import Data.Map (Map)
-import Language.Lemon.Syntax.Common (Alternative, Atom, Basic(..), Name, Parameter, Pattern(..), Statement, Type(..))
 
+import Data.Map as Map
+import Data.List as List
 import Language.Lemon.Syntax.Abstract as Abstract
 
 
@@ -47,14 +50,14 @@ data Expr
   | App Expr Expr
   | Let Scope Expr
   | Case Expr (List (Alternative Expr))
-  | Seq (List (Statement Expr))
+  | Seq (List (Stmt Expr))
 
 
 mkIf :: Expr -> Expr -> Expr -> Expr
 mkIf test pos neg =
   Case test $ List.fromFoldable
-    [ PBasic (Bool true) ** pos
-    , PBasic (Bool false) ** neg
+    [ PPrim (B true) ** pos
+    , PPrim (B false) ** neg
     ]
 
 
