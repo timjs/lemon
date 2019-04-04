@@ -14,6 +14,7 @@
     , "string-parsers"
     , "tuples"
     , "unicode"
+    , "record"
     ]
 , packages = ./packages.dhall
 }
