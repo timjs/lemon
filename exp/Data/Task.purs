@@ -5,6 +5,8 @@ import Preload
 import Data.Record (class DisjointUnion, class Intersection)
 import Unsafe.Coerce (unsafeCoerce)
 
+--FIXME: Only allow Basic types in editors
+
 
 -- Types -----------------------------------------------------------------------
 
