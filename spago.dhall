@@ -15,6 +15,7 @@
     , "tuples"
     , "unicode"
     , "record"
+    , "typelevel-prelude"
     ]
 , packages = ./packages.dhall
 }
