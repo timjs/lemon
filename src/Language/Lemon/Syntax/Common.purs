@@ -1,6 +1,7 @@
 module Language.Lemon.Syntax.Common
   ( Alternative
   , Atom(..)
+  , Mode(..)
   , Prim(..)
   , PrimType(..)
   , Fields
@@ -27,20 +28,25 @@ import Data.List as List
 data Stmt e
   = Set Pattern e
   | Bind Pattern e
-  | Par (List (List (Stmt e)))
-  | On (List { action :: Name, predicate :: e, body :: List (Stmt e) })
-  | When (List { predicate :: e, body :: List (Stmt e) })
+  | Par Mode (List (List (Stmt e)))
+  | On (List { action :: Name, guard :: e, body :: List (Stmt e) })
+  | When (List { guard :: e, body :: List (Stmt e) })
   | Done
 
 
-type Guarded r e = { predicate :: e, body :: List (Stmt e) | r }
+data Mode
+  = All
+  | Any
+
+
+type Guarded r e = { guard :: e, body :: List (Stmt e) | r }
 
 
 
 -- ATOMS -----------------------------------------------------------------------
 
 
-type Fields a = List { name :: Name, value :: a }
+type Fields e = List { name :: Name, value :: e }
 
 
 data Atom e
@@ -106,10 +112,10 @@ data PrimType
 -- FOLDABLE & TRAVERSABLE ------------------------------------------------------
 
 
-instance foldableCmd :: Foldable Stmt where
+instance foldableStmt :: Foldable Stmt where
   foldMap f (Set _ e)  = f e
   foldMap f (Bind _ e) = f e
-  foldMap f (Par bs)   = foldMap (foldMap (foldMap f)) bs
+  foldMap f (Par _ bs) = foldMap (foldMap (foldMap f)) bs
   foldMap f (On bs)    = foldMap (foldMapGuarded f) bs
   foldMap f (When bs)  = foldMap (foldMapGuarded f) bs
   foldMap f (Done)     = neutral
@@ -119,10 +125,10 @@ instance foldableCmd :: Foldable Stmt where
   foldr f = foldrDefault f
 
 
-instance traversableCmd :: Traversable Stmt where
+instance traversableStmt :: Traversable Stmt where
   sequence (Set p e)  = Set p <$> e
   sequence (Bind p e) = Bind p <$> e
-  sequence (Par bs)   = Par <$> sequence (map sequence (map (map sequence) bs))
+  sequence (Par m bs) = Par m <$> sequence (map sequence (map (map sequence) bs))
   sequence (On bs)    = On <$> sequence (map sequenceOn bs)
   sequence (When bs)  = When <$> sequence (map sequenceWhen bs)
   sequence (Done)     = pure $ Done
@@ -131,21 +137,21 @@ instance traversableCmd :: Traversable Stmt where
 
 
 foldMapGuarded :: forall e r m. Monoid m => (e -> m) -> Guarded r e -> m
-foldMapGuarded f { predicate: e, body: es } = f e <> foldMap (foldMap f) es
+foldMapGuarded f { guard: e, body: es } = f e <> foldMap (foldMap f) es
 
 
 sequenceOn :: forall e f. Applicative f => Guarded (action :: Name) (f e) -> f (Guarded (action :: Name) e)
-sequenceOn { action, predicate: e, body: es } = ado
-  { predicate, body } <- sequenceWhen { predicate: e, body: es }
-  in { action, predicate, body }
+sequenceOn { action, guard: e, body: es } = ado
+  { guard, body } <- sequenceWhen { guard: e, body: es }
+  in { action, guard, body }
 
 
 sequenceWhen :: forall e f. Applicative f => Guarded () (f e) -> f (Guarded () e)
-sequenceWhen { predicate: e, body: es } =
-  { predicate: _, body: _ } <$> e <*> sequence (map sequence es)
-  -- predicate <- e
+sequenceWhen { guard: e, body: es } =
+  { guard: _, body: _ } <$> e <*> sequence (map sequence es)
+  -- guard <- e
   -- body <- es'
-  -- in { predicate, body }
+  -- in { guard, body }
   -- where
   --   es' = sequence (map sequence es)
   --
@@ -180,9 +186,12 @@ instance traversableAtom :: Traversable Atom where
 -- BOILERPLATE -----------------------------------------------------------------
 
 
-derive instance genericCmd :: Generic (Stmt e) _
-derive instance functorCmd :: Functor Stmt
-instance showCmd :: Show e => Show (Stmt e) where show = genericShow
+derive instance genericStmt :: Generic (Stmt e) _
+derive instance functorStmt :: Functor Stmt
+instance showStmt :: Show e => Show (Stmt e) where show = genericShow
+
+derive instance genericMode :: Generic Mode _
+instance showMode :: Show Mode where show = genericShow
 
 derive instance genericAtom :: Generic (Atom e) _
 derive instance functorAtom :: Functor Atom

@@ -98,18 +98,18 @@ statement inner =
     [ Set <$ keyword "let" <* spaces
         <*> pattern <* equals
         <*> inner
-    , (\x xs -> Par (Cons x xs)) <$ keyword "do" <* spaces
+    , (\x xs -> Par All (Cons x xs)) <$ keyword "do" <* spaces
         <*> by semicolon (statement inner)
         <*> by spaces (keyword "also" *> spaces *> by semicolon (statement inner))
     , map On $
         by spaces $
-          { action: _, predicate: _, body: _ } <$ keyword "on" <* spaces
+          { action: _, guard: _, body: _ } <$ keyword "on" <* spaces
             <*> doublequoted <* spaces <* keyword "when" <* spaces
             <*> inner <* spaces <* keyword "do" <* spaces
             <*> by semicolon (statement inner)
     , map When $
         by spaces $
-          { predicate: _, body: _ } <$ keyword "when" <* spaces
+          { guard: _, body: _ } <$ keyword "when" <* spaces
             <*> inner <* spaces <* keyword "do" <* spaces
             <*> by semicolon (statement inner)
     , Done <$ keyword "done"
