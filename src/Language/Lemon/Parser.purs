@@ -28,12 +28,12 @@ module_ =
     <*> scope <* spaces <* eof
 
 
-scope :: Parser Scope
+scope :: Parser Bindings
 scope = fix \self ->
   by semicolon (declaration self)
 
 
-declaration :: Parser Scope -> Parser Decl
+declaration :: Parser Bindings -> Parser Decl
 declaration inner =
   Value
     <$> lower <* colon
@@ -47,7 +47,7 @@ declaration inner =
 -- EXPRESSIONS -----------------------------------------------------------------
 
 
-expression :: Parser Scope -> Parser Expr
+expression :: Parser Bindings -> Parser Expr
 expression inner = fix \self ->
   choice
     [ Atom
@@ -125,12 +125,12 @@ statement inner =
 atom :: Parser Expr -> Parser (Atom Expr)
 atom inner =
   choice
-    [ Prim <$> basic
-    , Var <$> lower
-    , Some <$ keyword "Some" <* spaces <*> inner
-    , None <$ keyword "None"
-    , List <$> list inner
-    , Record <$> record colon inner
+    [ APrim <$> basic
+    , AVar <$> lower
+    , AJust <$ keyword "Just" <* spaces <*> inner
+    , ANothing <$ keyword "Nothing"
+    , AList <$> list inner
+    , ARecord <$> record colon inner
     ]
 
 
@@ -192,8 +192,8 @@ pattern = fix \self ->
   choice
     [ PPrim <$> basic
     , PVar <$> lower
-    , PSome <$ keyword "Some" <* spaces <*> self
-    , PNone <$ keyword "None"
+    , PJust <$ keyword "Just" <* spaces <*> self
+    , PNothing <$ keyword "Nothing"
     , PNil <$ string "[]"
     , PRecord <$> record equals self
     , PIgnore <$ char '_'
@@ -217,7 +217,7 @@ type_ = fix \self ->
   choice
     [ TPrim <$> basicType
     , TVar <$> universal
-    , TOption <$ keyword "option" <* spaces <*> self
+    , TMaybe <$ keyword "option" <* spaces <*> self
     , TList <$ keyword "list" <* spaces <*> self
     , TRecord <$> record colon self
     , TTask <$ keyword "task" <* spaces <*> self

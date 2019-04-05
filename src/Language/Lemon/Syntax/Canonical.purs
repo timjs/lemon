@@ -3,7 +3,7 @@ module Language.Lemon.Syntax.Canonical
   , Error(..)
   , Expr(..)
   , Module(..)
-  , Scope
+  , Bindings
   , canonicalise
   , empty
   , module Language.Lemon.Syntax.Common
@@ -25,15 +25,15 @@ import Language.Lemon.Syntax.Abstract as Abstract
 -- DECLARATIONS ----------------------------------------------------------------
 
 
-type Scope = Map Name Decl
+type Bindings = Map Name Decl
 
 
-empty :: Scope
+empty :: Bindings
 empty = Map.empty
 
 
 data Module
-  = Module Scope
+  = Module Bindings
 
 
 data Decl
@@ -48,7 +48,7 @@ data Expr
   = Atom (Atom Expr)
   | Lam Parameter Expr
   | App Expr Expr
-  | Let Scope Expr
+  | Let Bindings Expr
   | Case Expr (List (Alternative Expr))
   | Seq (List (Stmt Expr))
 
@@ -73,12 +73,12 @@ data Error
 
 
 canonicalise :: Abstract.Module -> Either Error Module
-canonicalise (Abstract.Module scope) = Module <$> doScope scope
+canonicalise (Abstract.Module binds) = Module <$> doBindings binds
 
 
 --XXX: why is eta-expansion needed here???
-doScope :: Abstract.Scope -> Either Error Scope
-doScope scope = map doDecl scope # sequence # map Map.fromFoldable
+doBindings :: Abstract.Bindings -> Either Error Bindings
+doBindings binds = map doDecl binds # sequence # map Map.fromFoldable
 
 
 doDecl :: Abstract.Decl -> Either Error (Name ** Decl)
@@ -102,7 +102,7 @@ doExpr = case _ of
   Abstract.Atom atom       -> Atom <$> sequence (map doExpr atom)
   Abstract.Lam params expr -> foldr Lam <$> doExpr expr <*> pure params
   Abstract.App func args   -> foldl App <$> doExpr func <*> sequence (doExpr <$> args)
-  Abstract.Let scope expr  -> Let <$> doScope scope <*> doExpr expr
+  Abstract.Let binds expr  -> Let <$> doBindings binds <*> doExpr expr
   Abstract.Case test alts  -> Case <$> doExpr test <*> sequence (sequence << map doExpr <$> alts)
   Abstract.If test pos neg -> mkIf <$> doExpr test <*> doExpr pos <*> doExpr neg
   Abstract.Seq stmts       -> Seq <$> sequence (sequence << map doExpr <$> stmts)

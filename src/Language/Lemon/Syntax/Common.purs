@@ -50,12 +50,12 @@ type Fields e = List { name :: Name, value :: e }
 
 
 data Atom e
-  = Prim Prim
-  | Var Name
-  | None
-  | Some e
-  | List (List e)
-  | Record (Fields e)
+  = APrim Prim
+  | AVar Name
+  | AJust e
+  | ANothing
+  | AList (List e)
+  | ARecord (Fields e)
 
 
 data Prim
@@ -72,8 +72,8 @@ data Prim
 data Pattern
   = PPrim Prim
   | PVar Name
-  | PSome Pattern
-  | PNone
+  | PJust Pattern
+  | PNothing
   | PCons Pattern Pattern
   | PNil
   | PRecord (Fields Pattern)
@@ -94,7 +94,7 @@ type Alternative e = Pattern ** e
 data Type
   = TPrim PrimType
   | TVar Name
-  | TOption Type
+  | TMaybe Type
   | TList Type
   | TRecord (Fields Type)
   | TTask Type
@@ -158,10 +158,10 @@ sequenceWhen { guard: e, body: es } =
 
 
 instance foldableAtom :: Foldable Atom where
-  foldMap f (Some e)    = f e
-  foldMap f (List es)   = foldMap f es
-  foldMap f (Record fs) = foldMap f $ map _.value fs
-  foldMap f _           = neutral
+  foldMap f (AJust e)    = f e
+  foldMap f (AList es)   = foldMap f es
+  foldMap f (ARecord fs) = foldMap f $ map _.value fs
+  foldMap f _            = neutral
 
   foldl f = foldlDefault f
 
@@ -169,12 +169,12 @@ instance foldableAtom :: Foldable Atom where
 
 
 instance traversableAtom :: Traversable Atom where
-  sequence (Prim b)    = pure $ Prim b
-  sequence (Var x)     = pure $ Var x
-  sequence (None)      = pure $ None
-  sequence (Some e)    = Some <$> e
-  sequence (List es)   = List <$> sequence es
-  sequence (Record fs) = Record << List.zipWith { name: _, value: _ } names <$> sequence values
+  sequence (APrim b)    = pure $ APrim b
+  sequence (AVar x)     = pure $ AVar x
+  sequence (ANothing)   = pure $ ANothing
+  sequence (AJust e)    = AJust <$> e
+  sequence (AList es)   = AList <$> sequence es
+  sequence (ARecord fs) = ARecord << List.zipWith { name: _, value: _ } names <$> sequence values
     where
       names = map _.name fs
       values = map _.value fs

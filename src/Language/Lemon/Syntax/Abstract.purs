@@ -2,7 +2,7 @@ module Language.Lemon.Syntax.Abstract
   ( Decl(..)
   , Expr(..)
   , Module(..)
-  , Scope
+  , Bindings
   , empty
   , module Language.Lemon.Syntax.Common
   ) where
@@ -18,15 +18,15 @@ import Data.List (List(..))
 -- DECLARATIONS ----------------------------------------------------------------
 
 
-type Scope = List Decl
+type Bindings = List Decl
 
 
-empty :: Scope
+empty :: Bindings
 empty = Nil
 
 
 data Module
-  = Module Scope
+  = Module Bindings
 
 
 data Decl
@@ -41,7 +41,7 @@ data Expr
   = Atom (Atom Expr)
   | Lam (List Parameter) Expr
   | App Expr (List Expr)
-  | Let Scope Expr
+  | Let Bindings Expr
   | Case Expr (List (Alternative Expr))
   | If Expr Expr Expr
   | Seq (List (Stmt Expr))
