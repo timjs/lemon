@@ -2,6 +2,7 @@ module Preload
   ( module Reexport
   , neutral
   , (<<), (>>)
+  , (..)
   , (**), type (**), type (++)
   , (<&>), pair, none
   ) where
@@ -12,6 +13,7 @@ import Prelude hiding (mempty, (<<<), (>>>)) as Reexport
 import Control.Alternative as Reexport
 
 import Data.Either hiding (Either) as Reexport
+import Data.Enum (class Enum) as Reexport
 import Data.Functor as Reexport
 import Data.Foldable as Reexport
 import Data.Maybe as Reexport
@@ -28,6 +30,7 @@ import Data.Generic.Rep.Show (genericShow) as Reexport
 import Control.Semigroupoid (composeFlipped)
 
 import Data.Either (Either)
+import Data.Enum (enumFromTo)
 import Data.Monoid (mempty)
 import Data.Tuple (Tuple(Tuple))
 
@@ -36,6 +39,11 @@ import Data.Tuple (Tuple(Tuple))
 
 infixr 9 Reexport.compose as <<
 infixr 9 composeFlipped as >>
+
+-- Operators for enums --
+
+infix 8 enumFromTo as ..
+
 
 
 -- Operators for tuples and eithers --

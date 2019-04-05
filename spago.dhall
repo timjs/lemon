@@ -16,6 +16,7 @@
     , "unicode"
     , "record"
     , "typelevel-prelude"
+    , "enum"
     ]
 , packages = ./packages.dhall
 }
