@@ -76,9 +76,9 @@ adult (Passenger p) =
 -- Tasks -----------------------------------------------------------------------
 
 
-enter_passengers :: {} -> Task { passengers :: Array Passenger }
-enter_passengers {} = do
-  { passengers } <- enter "Passenger details" {}
+enter_passengers :: Task { passengers :: Array Passenger }
+enter_passengers = do
+  { passengers } <- enter "Passenger details"
   only
     { on: "Continue"
     , when: all valid passengers && any adult passengers && not (null passengers)
@@ -90,7 +90,7 @@ choose_seats :: { amount :: Int } -> Task { seats :: Array Seat }
 -- choose_seats :: forall a b. Eq b => Semiring b
 --   => { amount :: b | a } -> Task { seats :: Array Seat }
 choose_seats { amount } = do
-  { values: seats } <- select "Pick a Seat" [] free_seat_store {}
+  { values: seats } <- select "Pick a Seat" [] free_seat_store
   only
     { on: "Continue"
     , when: length seats == amount
@@ -100,27 +100,27 @@ choose_seats { amount } = do
     }
 
 
-make_booking :: {} -> Task { booking :: Booking }
-make_booking {} = do
+make_booking :: Task { booking :: Booking }
+make_booking = do
   { flight, passengers } <- (do
-    { flight } <- enter "Flight details" {}
+    { flight } <- enter "Flight details"
     only
       { on: "Continue"
       , when: true
       , then: done { flight }
       }
     ) -&&-
-    enter_passengers {}
+    enter_passengers
   { seats } <- choose_seats { amount: length passengers }
   view "Booking" { booking: Booking { passengers, flight, seats } }
 
 
-run :: {} -> Task { booking :: Booking }
-run {} = do
+run :: Task { booking :: Booking }
+run = do
   { booking } <-
-    watch "Free seats" free_seat_store {}
+    watch "Free seats" free_seat_store
       -&&-
-    make_booking {}
+    make_booking
   done { booking }
 
 
