@@ -1,10 +1,10 @@
 module Booking where
 
 
-import Preload hiding (oneOf)
+import Preload
 
 import Data.Array ((..))
-import Data.Task
+import Data.Task (Check, Store, Task, enter, only, select, store, view, watch, (-&&-), (<<-))
 
 import Data.Array as Array
 
@@ -80,43 +80,41 @@ adult (Passenger p) =
 enter_passengers :: {} -> Task { passengers :: Array Passenger }
 enter_passengers {} = do
   { value: passengers } <- enter "Passenger details" {}
-  oneOf
-    [ { name: "Continue"
-      , pred: all valid passengers && any adult passengers && not (null passengers)
-      , cont: pure { passengers }
-      }
-    ]
+  only
+    { on: "Continue"
+    , when: all valid passengers && any adult passengers && not (null passengers)
+    , cont: pure { passengers }
+    }
 
 
 enter_flight :: {} -> Task { flight :: Flight }
 enter_flight {} = do
   { value: flight } <- enter "Flight details" {}
-  oneOf
-    [ { name: "Continue"
-      , pred: true
-      , cont: pure { flight }
-      }
-    ]
+  only
+    { on: "Continue"
+    , when: true
+    , cont: pure { flight }
+    }
 
 
 choose_seats :: { amount :: Int } -> Task { seats :: Array Seat }
 choose_seats { amount } = do
   { value: seats } <- select "Pick a Seat" [] free_seat_store {}
-  oneOf
-    [ { name: "Continue"
-      , pred: length seats == amount
-      , cont: do
-          free_seat_store <<- Array.difference seats
-          pure { seats }
-      }
-    ]
+  only
+    { on: "Continue"
+    , when: length seats == amount
+    , cont: do
+        free_seat_store <<- Array.difference seats
+        pure { seats }
+    }
+
 
 make_booking :: {} -> Task { booking :: Booking }
 make_booking {} = do
-  { _1: { flight }, _2: { passengers } } <- allOf2
-    { _1: enter_flight {}
-    , _2: enter_passengers {}
-    }
+  { flight, passengers } <-
+    enter_flight {}
+      -&&-
+    enter_passengers {}
   { seats } <- choose_seats { amount: length passengers }
   { value: booking} <- view "Booking" { value: Booking { passengers, flight, seats } }
   pure { booking }
@@ -124,14 +122,12 @@ make_booking {} = do
 
 run :: {} -> Task { booking :: Booking }
 run {} = do
-  { _2: { booking } } <- allOf2
-    { _1: watch "Free seats" free_seat_store {}
-    , _2: make_booking {}
-    }
+  { booking } <-
+    watch "Free seats" free_seat_store {}
+      -&&-
+    make_booking {}
   pure { booking }
 
-
---XXX: do a scope check our selves but leave type checking to purescript?!
 
 
 -- Boilerplate -----------------------------------------------------------------

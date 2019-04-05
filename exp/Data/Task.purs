@@ -2,6 +2,7 @@ module Data.Task where
 
 import Preload
 
+import Data.Record (class DisjointUnion, class Intersection)
 import Unsafe.Coerce (unsafeCoerce)
 
 
@@ -28,28 +29,23 @@ instance bind :: Bind Task where
 
 -- Editors ---------------------------------------------------------------------
 
-enter :: forall a.
-  Message -> {} -> Task { value :: a }
+enter :: forall a. Message -> {} -> Task { value :: a }
 enter = undefined
 
-edit :: forall a.
-  Message -> { value :: a } ->Task { value :: a }
+edit :: forall a. Message -> { value :: a } ->Task { value :: a }
 edit = undefined
 
-view :: forall a.
-  Message -> { value :: a } -> Task { value :: a }
+view :: forall a. Message -> { value :: a } -> Task { value :: a }
 view = undefined
 
-watch :: forall a.
-  Message -> Store a -> {} -> Task { value :: a }
+watch :: forall a. Message -> Store a -> {} -> Task { value :: a }
 watch = undefined
 
-update :: forall a.
-  Message -> Store a -> {} -> Task {}
+update :: forall a. Message -> Store a -> {} -> Task {}
 update = undefined
 
-select :: forall a.
-  Message -> Array a -> Store (Array a) -> {} -> Task { value :: Array a }
+select :: forall a. Message -> Array a -> Store (Array a) -> {}
+  -> Task { value :: Array a }
 select = undefined
 
 
@@ -57,39 +53,36 @@ select = undefined
 
 infixl 3 modify as <<-
 
-store :: forall a.
-  a -> Store a
+store :: forall a. a -> Store a
 store = undefined
 
-modify :: forall a.
-  Store a -> (a -> a) -> Task Unit
+modify :: forall a. Store a -> (a -> a) -> Task Unit
 modify = undefined
 
 
 -- Combinators -----------------------------------------------------------------
 
-infixl 1 andThen as >>+
-infixl 1 andNext as >>?
+type Option a =
+  { on :: String, when :: Boolean, cont :: Task a }
 
-andThen :: forall a b.
-  Task a -> Array { pred :: a -> Boolean, cont :: a -> Task b } -> Task b
-andThen = undefined
+infixl 5 and as -&&-
+infixl 3 or as -||-
+infixl 3 pick as -??-
 
-andNext :: forall a b.
-  Task a -> Array { name :: String, pred :: a -> Boolean, cont :: a -> Task b } -> Task b
-andNext = undefined
+and :: forall a b c. DisjointUnion a b c
+  => Task (Record a) -> Task (Record b) -> Task (Record c)
+and = undefined
 
-allOf2 :: forall a b.
-  { _1 :: Task a, _2 :: Task b } -> Task { _1 :: a, _2 :: b }
-allOf2 = undefined
+or :: forall a b c. Intersection a b c
+  => Task (Record a) -> Task (Record b) -> Task (Record c)
+or = undefined
 
-anyOf :: forall a. -- Intersection over a's
-  Array (Task a) -> Task a
-anyOf = undefined
+pick :: forall a b c. Intersection a b c
+  => Option (Record a) -> Option (Record b) -> Task (Record c)
+pick = undefined
 
-oneOf :: forall a.
-  Array { name :: String, pred :: Boolean, cont :: Task a } -> Task a
-oneOf = undefined
+only :: forall a. Option (Record a) -> Task (Record  a)
+only = undefined
 
 
 -- Helpers ---------------------------------------------------------------------
