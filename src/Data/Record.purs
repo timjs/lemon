@@ -1,7 +1,7 @@
 module Data.Record
   ( module Record
   , class DisjointUnion
-  , class Intersection, intersection
+  , class Intersection, intersection, class RowListIntersection
   ) where
 
 
@@ -84,25 +84,3 @@ instance intersectionRL ::
 
 intersection :: forall r l i. Intersection r l i => Record r -> Record l -> Record i
 intersection = runFn2 unsafeIntersectionFn
-
-
-
-{- Tests -----------------------------------------------------------------------
-
-
-r1 :: {age :: Int}
-r1 = {age: 30}
-
-r2 :: {name :: String}
-r2 = {name: "John"}
-
-r3 :: {name :: String, town :: String}
-r3 = {name: "Peter", town: "Amsterdam"}
-
-r4 = Record.disjointUnion r1 r2 -- ==> {name: "John", age 30} :: {name :: String, age :: Int}
-r5 = Record.disjointUnion r2 r3 -- ==> Type error! Both r2 and r3 contain the field (name :: String).
-
-r6 = intersection r1 r2 -- ==> {} :: {}
-r7 = intersection r2 r3 -- ==> {name: "John"} :: {name :: String}
-
--}
