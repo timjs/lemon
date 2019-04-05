@@ -44,9 +44,11 @@ watch = undefined
 update :: forall a. Message -> Store a -> {} -> Task {}
 update = undefined
 
-select :: forall a. Message -> Array a -> Store (Array a) -> {}
-  -> Task { value :: Array a }
+select :: forall a. Message -> Array a -> Store (Array a) -> {} -> Task { values :: Array a }
 select = undefined
+
+done :: forall a f. Applicative f => a -> f a
+done = pure
 
 
 -- Stores ----------------------------------------------------------------------
@@ -63,7 +65,7 @@ modify = undefined
 -- Combinators -----------------------------------------------------------------
 
 type Option a =
-  { on :: String, when :: Boolean, cont :: Task a }
+  { on :: String, when :: Boolean, then :: Task a }
 
 infixl 5 and as -&&-
 infixl 3 or as -||-
