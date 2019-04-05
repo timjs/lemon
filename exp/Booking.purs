@@ -116,8 +116,7 @@ make_booking {} = do
       -&&-
     enter_passengers {}
   { seats } <- choose_seats { amount: length passengers }
-  { value: booking} <- view "Booking" { value: Booking { passengers, flight, seats } }
-  pure { booking }
+  view "Booking" { booking: Booking { passengers, flight, seats } }
 
 
 run :: {} -> Task { booking :: Booking }

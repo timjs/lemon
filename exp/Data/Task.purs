@@ -29,13 +29,13 @@ instance bind :: Bind Task where
 
 -- Editors ---------------------------------------------------------------------
 
-enter :: forall a. Message -> {} -> Task { value :: a }
+enter :: forall a. Message -> {} -> Task (Record a)
 enter = undefined
 
-edit :: forall a. Message -> { value :: a } ->Task { value :: a }
+edit :: forall a. Message -> Record a -> Task (Record a)
 edit = undefined
 
-view :: forall a. Message -> { value :: a } -> Task { value :: a }
+view :: forall a. Message -> Record a -> Task (Record a)
 view = undefined
 
 watch :: forall a. Message -> Store a -> {} -> Task { value :: a }
