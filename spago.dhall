@@ -17,6 +17,7 @@
     , "record"
     , "typelevel-prelude"
     , "enums"
+    , "pprint"
     ]
 , packages = ./packages.dhall
 }

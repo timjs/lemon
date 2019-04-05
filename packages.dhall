@@ -116,6 +116,15 @@ let upstream =
 
 let overrides = {=}
 
-let additions = {=}
+let additions =
+  { pprint =
+      mkPackage
+        [ "arrays"
+        , "strings"
+        , "unfoldable"
+        ]
+        "https://github.com/paf31/purescript-pprint.git"
+        "v5.0.0"
+  }
 
 in  upstream // overrides // additions
