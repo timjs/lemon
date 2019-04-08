@@ -5,8 +5,8 @@ module Preload
   , (..)
   , (**), type (**), type (++)
   , (<&>), pair, none
+  , undefined
   ) where
-
 
 import Prelude hiding (mempty, (<<<), (>>>)) as Reexport
 
@@ -24,7 +24,6 @@ import Data.Generic.Rep (class Generic) as Reexport
 import Data.Generic.Rep.Show (genericShow) as Reexport
 
 
-
 -- RENAMES ---------------------------------------------------------------------
 
 import Control.Semigroupoid (composeFlipped)
@@ -34,16 +33,20 @@ import Data.Enum (enumFromTo)
 import Data.Monoid (mempty)
 import Data.Tuple (Tuple(Tuple))
 
+import Unsafe.Coerce (unsafeCoerce)
+
+import Prim.TypeError (class Warn, Text)
+
 
 -- Operators for composition --
 
 infixr 9 Reexport.compose as <<
 infixr 9 composeFlipped as >>
 
+
 -- Operators for enums --
 
 infix 8 enumFromTo as ..
-
 
 
 -- Operators for tuples and eithers --
@@ -59,7 +62,6 @@ neutral :: forall m. Reexport.Monoid m => m
 neutral = mempty
 
 
-
 -- ADDITIONS -------------------------------------------------------------------
 
 -- Operator and functions for monoidal functors --
@@ -71,3 +73,9 @@ pair x y = (**) Reexport.<$> x Reexport.<*> y
 
 none :: forall f. Reexport.Applicative f => f Reexport.Unit
 none = Reexport.pure Reexport.unit
+
+
+-- Undefined --
+
+undefined :: forall a. Warn (Text "Undefined function in code") => a
+undefined = unsafeCoerce Reexport.unit
