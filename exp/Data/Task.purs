@@ -3,7 +3,6 @@ module Data.Task where
 import Preload
 
 import Data.Record (class DisjointUnion, class Intersection)
-import Unsafe.Coerce (unsafeCoerce)
 
 --FIXME: Only allow Basic types in editors
 
@@ -87,12 +86,3 @@ pick = undefined
 
 only :: forall a. Option (Record a) -> Task (Record  a)
 only = undefined
-
-
--- Helpers ---------------------------------------------------------------------
-
-always :: forall a. a -> Boolean
-always = const true
-
-undefined :: forall a. a
-undefined = unsafeCoerce unit
