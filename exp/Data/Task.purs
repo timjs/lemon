@@ -9,7 +9,6 @@ import Data.Record (class DisjointUnion, class Intersection)
 
 -- Types -----------------------------------------------------------------------
 
-type Check a = a -> Boolean
 type Message = String
 
 data Task a
@@ -66,14 +65,10 @@ modify :: forall a. Store a -> (a -> a) -> Task Unit
 modify = undefined
 
 
--- Combinators -----------------------------------------------------------------
-
-type Option a =
-  { on :: String, when :: Boolean, then :: Task a }
+-- Combinations ----------------------------------------------------------------
 
 infixl 5 and as -&-
 infixl 3 or as -|-
-infixl 3 pick as -?-
 
 and :: forall a b c. DisjointUnion a b c
   => Task (Record a) -> Task (Record b) -> Task (Record c)
@@ -83,6 +78,15 @@ or :: forall a b c. Intersection a b c
   => Task (Record a) -> Task (Record b) -> Task (Record c)
 or = undefined
 
+
+-- Options ---------------------------------------------------------------------
+
+infixl 3 pick as -?-
+
+type Check a = a -> Boolean
+type Option a =
+  { on :: String, when :: Boolean, then :: Task a }
+
 pick :: forall a b c. Intersection a b c
   => Option (Record a) -> Option (Record b) -> Task (Record c)
 pick = undefined
@@ -90,10 +94,14 @@ pick = undefined
 only :: forall a. Option (Record a) -> Task (Record  a)
 only = undefined
 
+check :: forall p a b c. Intersection a b c
+  => Boolean -> Task (Record a) -> Task (Record b) -> Task (Record c)
+check = undefined
+
 
 -- Appointment -----------------------------------------------------------------
 
 infixr 6 appoint as -@-
 
-appoint :: forall a. User -> Task { |a} -> Task { |a}
+appoint :: forall a. User -> Task (Record a) -> Task (Record a)
 appoint = undefined
