@@ -18,6 +18,9 @@ data Task a
 data Store a
   = Store a
 
+data User
+  = User
+
 instance functorTask :: Functor Task where
   map = undefined
 instance applyTask :: Apply Task where
@@ -68,9 +71,9 @@ modify = undefined
 type Option a =
   { on :: String, when :: Boolean, then :: Task a }
 
-infixl 5 and as -&&-
-infixl 3 or as -||-
-infixl 3 pick as -??-
+infixl 5 and as -&-
+infixl 3 or as -|-
+infixl 3 pick as -?-
 
 and :: forall a b c. DisjointUnion a b c
   => Task (Record a) -> Task (Record b) -> Task (Record c)
@@ -86,3 +89,11 @@ pick = undefined
 
 only :: forall a. Option (Record a) -> Task (Record  a)
 only = undefined
+
+
+-- Appointment -----------------------------------------------------------------
+
+infixr 6 appoint as -@-
+
+appoint :: forall a. User -> Task { |a} -> Task { |a}
+appoint = undefined

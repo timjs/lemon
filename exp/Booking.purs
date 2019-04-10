@@ -1,12 +1,7 @@
 module Booking where
 
 
-import Preload
-
-import Data.Task (Check, Store, Task, done, enter, only, select, store, view, watch, (-&&-), (<<-))
-
-import Data.Array as Array
-
+import Preface
 
 
 -- Data ------------------------------------------------------------------------
@@ -95,7 +90,7 @@ choose_seats { amount } = do
     { on: "Continue"
     , when: length seats == amount
     , then: do
-        free_seat_store <<- Array.difference seats
+        free_seat_store <<- difference seats
         done { seats }
     }
 
@@ -109,8 +104,9 @@ make_booking = do
       , when: true
       , then: done { flight }
       }
-    ) -&&-
-    enter_passengers
+    ) -&- (do
+      enter_passengers
+    )
   { seats } <- choose_seats { amount: length passengers }
   view "Booking" { booking: Booking { passengers, flight, seats } }
 
@@ -119,7 +115,7 @@ run :: Task { booking :: Booking }
 run = do
   { booking } <-
     watch "Free seats" free_seat_store
-      -&&-
+      -&-
     make_booking
   done { booking }
 
