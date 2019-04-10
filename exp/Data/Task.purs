@@ -84,6 +84,8 @@ or = undefined
 infixl 3 pick as -?-
 
 type Check a = a -> Boolean
+type Alternative p a =
+  { when :: p, then :: Task (Record a) }
 type Option a =
   { on :: String, when :: Boolean, then :: Task a }
 
@@ -97,6 +99,16 @@ only = undefined
 check :: forall p a b c. Intersection a b c
   => Boolean -> Task (Record a) -> Task (Record b) -> Task (Record c)
 check = undefined
+
+match :: forall p a. p -> (p -> Task (Record a)) -> Task (Record a)
+match x cases = cases x
+
+with :: forall p. p -> Task {}
+with _ = undefined
+
+on :: forall p a b c. Intersection a b c
+  => p -> Task (Record a) -> (p -> Task (Record b)) -> p -> Task (Record c)
+on = undefined
 
 
 -- Appointment -----------------------------------------------------------------
