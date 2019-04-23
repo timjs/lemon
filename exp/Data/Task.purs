@@ -1,6 +1,6 @@
 module Data.Task where
 
-import Preload
+import Preload (Unit, class Functor, class Apply, class Applicative, class Bind, class Monad, pure, undefined)
 
 import Data.Record (class DisjointUnion, class Intersection)
 
@@ -10,6 +10,7 @@ import Data.Record (class DisjointUnion, class Intersection)
 -- Types -----------------------------------------------------------------------
 
 type Message = String
+type Check a = a -> Boolean
 
 data Task a
   = Task a
@@ -26,8 +27,9 @@ instance applyTask :: Apply Task where
   apply = undefined
 instance applicativeTask :: Applicative Task where
   pure = undefined
-instance bind :: Bind Task where
+instance bindTask :: Bind Task where
   bind = undefined
+instance monadTask :: Monad Task
 
 
 -- Editors ---------------------------------------------------------------------
@@ -50,7 +52,7 @@ update = undefined
 select :: forall a. Message -> Array a -> Store (Array a) -> Task { values :: Array a }
 select = undefined
 
-done :: forall a f. Applicative f => a -> f a
+done :: forall a. Record a -> Task (Record a)
 done = pure
 
 
@@ -79,36 +81,30 @@ or :: forall a b c. Intersection a b c
 or = undefined
 
 
--- Options ---------------------------------------------------------------------
+-- Continuations ---------------------------------------------------------------
 
-infixl 3 pick as -?-
+infixl 3 xor as -?-
 
-type Check a = a -> Boolean
-type Alternative p a =
-  { when :: p, then :: Task (Record a) }
-type Option a =
-  { on :: String, when :: Boolean, then :: Task a }
+type Continuation r a = { then :: Task a | r }
+type Branch a = Continuation ( when :: Boolean ) a
+type Option a = Continuation ( on :: String, when :: Boolean ) a
 
-pick :: forall a b c. Intersection a b c
-  => Option (Record a) -> Option (Record b) -> Task (Record c)
-pick = undefined
-
-only :: forall a. Option (Record a) -> Task (Record  a)
+only :: forall a r. Continuation r (Record a) -> Task (Record a)
 only = undefined
 
-check :: forall p a b c. Intersection a b c
+xor :: forall a b c r. Intersection a b c
+  => Continuation r (Record a) -> Continuation r (Record b) -> Continuation r (Record c)
+xor = undefined
+
+when :: forall a. Boolean -> Task (Record a) -> Branch (Record a)
+when = undefined
+
+on :: forall a. String -> Boolean -> Task (Record a) -> Option (Record a)
+on = undefined
+
+check :: forall a b c. Intersection a b c
   => Boolean -> Task (Record a) -> Task (Record b) -> Task (Record c)
 check = undefined
-
-match :: forall p a. p -> (p -> Task (Record a)) -> Task (Record a)
-match x cases = cases x
-
-with :: forall p. p -> Task {}
-with _ = undefined
-
-on :: forall p a b c. Intersection a b c
-  => p -> Task (Record a) -> (p -> Task (Record b)) -> p -> Task (Record c)
-on = undefined
 
 
 -- Appointment -----------------------------------------------------------------
