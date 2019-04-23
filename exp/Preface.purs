@@ -6,7 +6,7 @@ module Preface
   , undefined
   ) where
 
-import Prelude hiding (mempty, (<<<), (>>>)) as Reexport
+import Prelude hiding (mempty, (<<<), (>>>), when) as Reexport
 
 import Data.Array hiding ((..)) as Reexport
 import Data.Enum (class Enum) as Reexport
