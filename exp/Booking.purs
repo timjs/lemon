@@ -74,7 +74,7 @@ adult (Passenger p) =
 enter_passengers :: Task { passengers :: Array Passenger }
 enter_passengers = do
   { passengers } <- enter "Passenger details"
-  only $ on "Continue" (all valid passengers && any adult passengers && not (null passengers)) do
+  only <| on "Continue" (all valid passengers && any adult passengers && not (null passengers)) do
     done { passengers }
 
 
@@ -83,7 +83,7 @@ choose_seats :: { amount :: Int } -> Task { seats :: Array Seat }
 --   => { amount :: b | a } -> Task { seats :: Array Seat }
 choose_seats { amount } = do
   { values: seats } <- select "Pick a Seat" [] free_seat_store
-  only $ on "Continue" (length seats == amount) do
+  only <| on "Continue" (length seats == amount) do
     free_seat_store <<- difference seats
     done { seats }
 
@@ -92,7 +92,7 @@ make_booking :: Task { booking :: Booking }
 make_booking = do
   { flight, passengers } <- (do
     { flight } <- enter "Flight details"
-    only $ on "Continue" true do
+    only <| on "Continue" true do
       done { flight }
     ) -&- (do
       enter_passengers

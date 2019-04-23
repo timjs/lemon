@@ -28,16 +28,15 @@ data Severity
 report_bug :: Task {}
 report_bug = do
   { bug } <- enter "Bug information"
-  only $
-    when (bug.severity == Critical) do
+  only
+    <| when (bug.severity == Critical) do
       { assessor } <- select_assessor { application: bug.application, version: bug.version }
       { confirmed } <- assessor -@- confirm_critical_bug { bug }
       { developer } <- select_developer { application: bug.application, version: bug.version }
       check confirmed
         (developer -@- resolve_critical_bug { bug })
         (developer -@- resolve_normal_bug { bug })
-    -?-
-    when (bug.severity == Normal) (do
+    -| when (bug.severity == Normal) (do
       { developer } <- select_developer { application: bug.application, version: bug.version }
       developer -@- resolve_normal_bug { bug })
 

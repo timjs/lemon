@@ -2,12 +2,12 @@ module Preface
   ( module Reexport
   , neutral
   , (<<), (>>)
+  , (<|), (|>)
   , (..)
   , undefined
   ) where
 
-import Prelude hiding (mempty, (<<<), (>>>), when) as Reexport
-
+import Prelude hiding (mempty, (<<<), (>>>), ($), (#), when) as Reexport
 import Data.Array hiding ((..)) as Reexport
 import Data.Enum (class Enum) as Reexport
 import Data.Maybe as Reexport
@@ -18,21 +18,26 @@ import Data.Task as Reexport
 -- RENAMES ---------------------------------------------------------------------
 
 import Control.Semigroupoid (composeFlipped)
-
 import Data.Either (Either)
 import Data.Enum (enumFromTo)
 import Data.Monoid (mempty)
 import Data.Tuple (Tuple(Tuple))
-
 import Unsafe.Coerce (unsafeCoerce)
-
 import Prim.TypeError (class Warn, Text)
+
+import Data.Function as Function
 
 
 -- Operators for composition --
 
 infixr 9 Reexport.compose as <<
 infixr 9 composeFlipped as >>
+
+
+-- Operators for sequencing -
+
+infixr 0 Function.apply as <|
+infixl 1 Function.applyFlipped as |>
 
 
 -- Operators for enums --

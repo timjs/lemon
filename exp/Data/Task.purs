@@ -83,7 +83,7 @@ or = undefined
 
 -- Continuations ---------------------------------------------------------------
 
-infixl 3 xor as -?-
+infixl 3 xor as -|
 
 type Continuation r a = { then :: Task a | r }
 type Branch a = Continuation ( when :: Boolean ) a
