@@ -79,6 +79,14 @@ enter_passengers = do
     , when: all valid passengers && any adult passengers && not (null passengers)
     , then: done { passengers }
     }
+{-
+enter_passengers' :: Task { passengers :: Array Passenger }
+enter_passengers' = do
+  { passengers } <- enter "Passenger details"
+  only $
+    on "Continue" (all valid passengers && any adult passengers && not (null passengers)) do
+      done { passengers }
+-}
 
 
 choose_seats :: { amount :: Int } -> Task { seats :: Array Seat }
