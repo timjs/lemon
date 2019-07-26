@@ -1,4 +1,7 @@
-{ name = "lemon"
+{ name =
+    "lemon"
+, sources =
+    [ "src/**/*.purs" ]
 , dependencies =
     [ "console"
     , "effect"
@@ -19,5 +22,6 @@
     , "enums"
     , "pprint"
     ]
-, packages = ./packages.dhall
+, packages =
+    ./packages.dhall
 }
