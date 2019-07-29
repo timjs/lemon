@@ -1,4 +1,4 @@
-module Language.Lemon.Names
+module Tophat.Names
   ( Name
   , isLower
   , isUpper

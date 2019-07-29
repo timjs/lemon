@@ -1,4 +1,4 @@
-module Language.Lemon.Syntax.Common
+module Tophat.Syntax.Common
   ( Alternative
   , Atom(..)
   , Mode(..)
@@ -9,12 +9,12 @@ module Language.Lemon.Syntax.Common
   , Pattern(..)
   , Stmt(..)
   , Type(..)
-  , module Language.Lemon.Names
+  , module Tophat.Names
   ) where
 
 import Preload
 import Data.List (List)
-import Language.Lemon.Names (Name, isLower, isUpper)
+import Tophat.Names (Name, isLower, isUpper)
 import Data.List as List
 
 -- STATEMENTS ------------------------------------------------------------------

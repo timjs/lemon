@@ -1,8 +1,8 @@
-module Language.Lemon.Printer where
+module Tophat.Printer where
 {-
 import Preload
 import Data.Array as Array
-import Language.Lemon.Syntax.Canonical
+import Tophat.Syntax.Canonical
 import Text.Pretty (Doc, hcat, vcat, text)
 import Text.Pretty as Pretty
 

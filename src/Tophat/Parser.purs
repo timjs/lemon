@@ -1,9 +1,9 @@
-module Language.Lemon.Parser
+module Tophat.Parser
   ( module_
   ) where
 
 import Preload hiding (between)
-import Language.Lemon.Syntax.Abstract
+import Tophat.Syntax.Abstract
 import Data.List (List(..))
 import Text.Parsing.StringParser (Parser, fail, try)
 import Text.Parsing.StringParser.CodeUnits (anyChar, anyDigit, anyLetter, char, eof, lowerCaseChar, skipSpaces, string, upperCaseChar)

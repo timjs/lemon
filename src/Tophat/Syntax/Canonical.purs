@@ -1,4 +1,4 @@
-module Language.Lemon.Syntax.Canonical
+module Tophat.Syntax.Canonical
   ( Decl(..)
   , Error(..)
   , Expr(..)
@@ -6,16 +6,16 @@ module Language.Lemon.Syntax.Canonical
   , Bindings
   , canonicalise
   , empty
-  , module Language.Lemon.Syntax.Common
+  , module Tophat.Syntax.Common
   ) where
 
 import Preload
-import Language.Lemon.Syntax.Common
+import Tophat.Syntax.Common
 import Data.List (List(..))
 import Data.Map (Map)
 import Data.Map as Map
 import Data.List as List
-import Language.Lemon.Syntax.Abstract as Abstract
+import Tophat.Syntax.Abstract as Abstract
 
 -- DECLARATIONS ----------------------------------------------------------------
 data Module

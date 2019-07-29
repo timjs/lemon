@@ -1,14 +1,14 @@
-module Language.Lemon.Syntax.Abstract
+module Tophat.Syntax.Abstract
   ( Decl(..)
   , Expr(..)
   , Module(..)
   , Bindings
   , empty
-  , module Language.Lemon.Syntax.Common
+  , module Tophat.Syntax.Common
   ) where
 
 import Preload
-import Language.Lemon.Syntax.Common
+import Tophat.Syntax.Common
 import Data.List (List(..))
 
 -- DECLARATIONS ----------------------------------------------------------------
