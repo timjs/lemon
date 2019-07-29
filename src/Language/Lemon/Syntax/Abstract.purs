@@ -12,14 +12,14 @@ import Language.Lemon.Syntax.Common
 import Data.List (List(..))
 
 -- DECLARATIONS ----------------------------------------------------------------
+data Module
+  = Module Bindings
+
 type Bindings
   = List Decl
 
 empty :: Bindings
 empty = Nil
-
-data Module
-  = Module Bindings
 
 data Decl
   = Value Name Type Name (List Pattern) Expr

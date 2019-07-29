@@ -1,6 +1,7 @@
 module Language.Lemon.Printer where
-
+{-
 import Preload
+import Data.Array as Array
 import Language.Lemon.Syntax.Canonical
 import Text.Pretty (Doc, hcat, vcat, text)
 import Text.Pretty as Pretty
@@ -8,7 +9,7 @@ import Text.Pretty as Pretty
 print :: Module -> String
 print = Pretty.render << doModule
 
--- Declarations ----------------------------------------------------------------
+-- DECLARATIONS ----------------------------------------------------------------
 doModule :: Module -> Doc
 doModule (Module bs) =
   vcat
@@ -29,7 +30,7 @@ doDecl name (Value typ expr) doc =
     , neutral
     ]
 
--- Expressions -----------------------------------------------------------------
+-- EXPRESSIONS -----------------------------------------------------------------
 doExpr :: Expr -> Doc
 doExpr = case _ of
   Atom a -> doAtom a
@@ -49,41 +50,41 @@ doExpr = case _ of
       ]
   Seq stmts -> parens $ vcat $ map doStmt stmts
 
--- Statements ------------------------------------------------------------------
+-- STATEMENTS ------------------------------------------------------------------
 doStmt :: Stmt Expr -> Doc
 doStmt = case _ of
   Set pat expr -> hsep [ text "let", doPattern pat, text "=", doExpr expr, text "in" ]
   Bind pat expr -> bind pat expr
-  Do expr -> bind PIgnore expr
-  Par brns -> vcat $ Array.map par brns
+  Seq expr -> bind PIgnore expr
+  Par brns -> vcat $ map par brns
   When brns ->
     vcat
       [ text ">>>"
-      , indent $ list $ Array.map pair2 brns
+      , indent $ list $ map pair2 brns
       ]
   On brns ->
     vcat
       [ text ">?>"
-      , indent $ list $ Array.map pair3 brns
+      , indent $ list $ map pair3 brns
       ]
-  Done -> --FIXME: How to handle this?
-    hsep [ text "return", tuple $ Array.map text $ some_tuple_with_visible_names ]
+  --FIXME: How to handle this?
+  Done -> hsep [ text "return", tuple $ map text $ some_tuple_with_visible_names ]
   where
   bind pat expr = hsep [ doExpr expr, text ">>=", text "\\", doPattern pat, text "->" ]
 
-  pair2 (pred ** stmts) = tuple [ doExpr pred, doStmt stmt ]
+  pair2 (pred ** stmts) = tuple [ doExpr pred, doStmt ?stmt ]
 
-  pair3 (name ** pred ** stmts) = tuple [ text name, doExpr pred, doStmt stmt ]
+  pair3 (name ** pred ** stmts) = tuple [ text name, doExpr pred, doStmt ?stmt ]
 
   par stmts =
     vcat
       [ text "also"
-      , indent $ vcat $ Array.map doStmt stmts
+      , indent $ vcat $ map doStmt stmts
       ]
 
-  some_tuple_with_visible_names = Debug.todo "some tuple with visible names"
+  some_tuple_with_visible_names = undefined
 
--- Atoms -----------------------------------------------------------------------
+-- ATOMS -----------------------------------------------------------------------
 doAtom :: Atom Expr -> Doc
 doAtom = case _ of
   APrim bas -> doPrim bas
@@ -109,7 +110,7 @@ just conv inner = hsep [ text "Just", parens $ conv inner ]
 
 nothing = text "Nothing"
 
--- Patterns --------------------------------------------------------------------
+-- PATTERNS --------------------------------------------------------------------
 doPattern :: Pattern -> Doc
 doPattern = case _ of
   PPrim bas -> doPrim bas
@@ -128,7 +129,7 @@ doAlternative (pat ** expr) doc =
     , indent $ doExpr expr
     ]
 
--- Types -----------------------------------------------------------------------
+-- TYPES -----------------------------------------------------------------------
 doType :: Type -> Doc
 doType = case _ of
   TPrim b -> doPrimType b
@@ -146,8 +147,8 @@ doPrimType b = case b of
   TFloat -> text "Real"
   TString -> text "String"
 
--- Helpers ---------------------------------------------------------------------
-hsep :: Foldable f => f Doc -> Doc
+-- HELPERS ---------------------------------------------------------------------
+hsep :: forall f. Foldable f => f Doc -> Doc
 hsep = intercalate space
 
 indent :: Doc -> Doc
@@ -171,7 +172,7 @@ list = brackets << hcat (text ",")
 space :: Doc
 space = Pretty.empty 1 0
 
--- Preamble --------------------------------------------------------------------
+-- PREAMBLE --------------------------------------------------------------------
 preamble :: String
 preamble =
   """
@@ -181,4 +182,8 @@ import Preface
 
 ...some more things...
 """
- -- hcat <=> join -- hsep <=> words -- vcat <=> lines
+-}
+
+-- hcat <=> join
+-- hsep <=> words
+-- vcat <=> lines

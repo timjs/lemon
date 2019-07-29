@@ -47,6 +47,7 @@ data Atom e
 
 data Prim
   = B Boolean
+  | N Nat
   | I Int
   | F Number
   | S String
@@ -81,6 +82,7 @@ data Type
 
 data PrimType
   = TBool
+  | TNat
   | TInt
   | TFloat
   | TString

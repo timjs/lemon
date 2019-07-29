@@ -18,14 +18,14 @@ import Data.List as List
 import Language.Lemon.Syntax.Abstract as Abstract
 
 -- DECLARATIONS ----------------------------------------------------------------
+data Module
+  = Module Bindings
+
 type Bindings
   = Map Name Decl
 
 empty :: Bindings
 empty = Map.empty
-
-data Module
-  = Module Bindings
 
 data Decl
   = Value Type Expr
