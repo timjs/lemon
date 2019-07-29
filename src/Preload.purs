@@ -14,6 +14,7 @@ module Preload
   , pair
   , none
   , undefined
+  , using
   ) where
 
 -- Reexports
@@ -23,6 +24,7 @@ import Data.Either hiding (Either) as Reexport
 import Data.Enum (class Enum) as Reexport
 import Data.Functor as Reexport
 import Data.Foldable as Reexport
+import Data.Newtype (class Newtype, wrap, unwrap, ala, over, under) as Reexport
 import Data.Maybe as Reexport
 import Data.Traversable as Reexport
 import Data.Tuple hiding (Tuple(Tuple)) as Reexport
@@ -91,3 +93,7 @@ none = Reexport.pure Reexport.unit
 -- Undefined --
 undefined :: forall a. Warn (Text "Undefined function in code") => a
 undefined = unsafeCoerce Reexport.unit
+
+-- Newtypes --
+using :: forall f s b a t. Reexport.Newtype t a => Reexport.Newtype s b => Reexport.Functor f => (a -> t) -> (f s -> t) -> f b -> a
+using _ f = Reexport.unwrap << f << Reexport.map Reexport.wrap
