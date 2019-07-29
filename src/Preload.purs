@@ -7,6 +7,9 @@ module Preload
   , (**)
   , type (**)
   , type (++)
+  , Nat
+  , nat
+  , unnat
   , (<&>)
   , pair
   , none
@@ -53,6 +56,27 @@ neutral :: forall m. Reexport.Monoid m => m
 neutral = mempty
 
 -- ADDITIONS -------------------------------------------------------------------
+-- Natural numbers --
+newtype Nat
+  = Nat Int
+
+nat :: Int -> Nat
+nat i
+  | i Reexport.>= 0 = Nat i
+  | Reexport.otherwise = Nat 0
+
+unnat :: Nat -> Int
+unnat (Nat i) = i
+
+instance showNat :: Reexport.Show Nat where
+  show (Nat i) = "+" Reexport.<> Reexport.show i
+
+instance eqNat :: Reexport.Eq Nat where
+  eq (Nat i) (Nat j) = i Reexport.== j
+
+instance ordNat :: Reexport.Ord Nat where
+  compare (Nat i) (Nat j) = Reexport.compare i j
+
 -- Operator and functions for monoidal functors --
 infixl 5 pair as <&>
 
