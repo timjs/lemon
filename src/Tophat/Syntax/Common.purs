@@ -14,12 +14,14 @@ module Tophat.Syntax.Common
 
 import Preload
 import Data.List (List)
+import Data.Map (Map)
 import Tophat.Names (Name, isLower, isUpper)
 import Data.List as List
+import Data.Map as Map
 
 -- STATEMENTS ------------------------------------------------------------------
 data Stmt e
-  = Set Pattern e
+  = Use Pattern e
   | Bind Pattern e
   | Par Mode (List (List (Stmt e)))
   | On (List { action :: Name, guard :: e, body :: List (Stmt e) })
@@ -35,7 +37,7 @@ type Guarded r e
 
 -- ATOMS -----------------------------------------------------------------------
 type Fields e
-  = List { name :: Name, value :: e }
+  = Map Name e
 
 data Atom e
   = APrim Prim
@@ -89,7 +91,7 @@ data PrimType
 
 -- FOLDABLE & TRAVERSABLE ------------------------------------------------------
 instance foldableStmt :: Foldable Stmt where
-  foldMap f (Set _ e) = f e
+  foldMap f (Use _ e) = f e
   foldMap f (Bind _ e) = f e
   foldMap f (Par _ bs) = foldMap (foldMap (foldMap f)) bs
   foldMap f (On bs) = foldMap (foldMapGuarded f) bs
@@ -99,7 +101,7 @@ instance foldableStmt :: Foldable Stmt where
   foldr f = foldrDefault f
 
 instance traversableStmt :: Traversable Stmt where
-  sequence (Set p e) = Set p <$> e
+  sequence (Use p e) = Use p <$> e
   sequence (Bind p e) = Bind p <$> e
   sequence (Par m bs) = Par m <$> sequence (map sequence (map (map sequence) bs))
   sequence (On bs) = On <$> sequence (map sequenceOn bs)
@@ -127,7 +129,7 @@ sequenceWhen { guard: e, body: es } = { guard: _, body: _ } <$> e <*> sequence (
 instance foldableAtom :: Foldable Atom where
   foldMap f (AJust e) = f e
   foldMap f (AList es) = foldMap f es
-  foldMap f (ARecord fs) = foldMap f $ map _.value fs
+  foldMap f (ARecord fs) = foldMap f $ Map.values fs
   foldMap f _ = neutral
   foldl f = foldlDefault f
   foldr f = foldrDefault f
@@ -138,11 +140,7 @@ instance traversableAtom :: Traversable Atom where
   sequence (ANothing) = pure $ ANothing
   sequence (AJust e) = AJust <$> e
   sequence (AList es) = AList <$> sequence es
-  sequence (ARecord fs) = ARecord << List.zipWith { name: _, value: _ } names <$> sequence values
-    where
-    names = map _.name fs
-
-    values = map _.value fs
+  sequence (ARecord fs) = ARecord <$> sequence fs
   traverse = traverseDefault
 
 -- BOILERPLATE -----------------------------------------------------------------
