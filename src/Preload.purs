@@ -16,6 +16,7 @@ module Preload
   , undefined
   ) where
 
+-- Reexports
 import Prelude hiding (mempty, (<<<), (>>>)) as Reexport
 import Control.Alternative as Reexport
 import Data.Either hiding (Either) as Reexport
@@ -27,7 +28,7 @@ import Data.Traversable as Reexport
 import Data.Tuple hiding (Tuple(Tuple)) as Reexport
 import Data.Generic.Rep (class Generic) as Reexport
 import Data.Generic.Rep.Show (genericShow) as Reexport
--- RENAMES ---------------------------------------------------------------------
+-- Rest
 import Control.Semigroupoid (composeFlipped)
 import Data.Either (Either)
 import Data.Enum (enumFromTo)
@@ -36,6 +37,7 @@ import Data.Tuple (Tuple(Tuple))
 import Unsafe.Coerce (unsafeCoerce)
 import Prim.TypeError (class Warn, Text)
 
+-- RENAMES ---------------------------------------------------------------------
 -- Operators for composition --
 infixr 9 Reexport.compose as <<
 
