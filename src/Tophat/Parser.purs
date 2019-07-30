@@ -3,7 +3,7 @@ module Tophat.Parser
   ) where
 
 import Preload hiding (between)
-import Tophat.Syntax.Abstract
+import Tophat.Syntax.Abstract (Alternative, Atom(..), Bindings, Decl(..), Expr(..), Fields, Mode(..), Module(..), Name, Parameter, Pattern(..), Prim(..), PrimType(..), Stmt(..), Type(..))
 import Data.List (List(..))
 import Text.Parsing.StringParser (Parser, fail, try)
 import Text.Parsing.StringParser.CodeUnits (anyChar, anyDigit, anyLetter, char, eof, lowerCaseChar, skipSpaces, string, upperCaseChar)
@@ -11,6 +11,7 @@ import Text.Parsing.StringParser.Combinators (between, choice, fix, many, many1,
 import Data.Array as Array
 import Data.Int as Int
 import Data.List.NonEmpty as NonEmpty
+import Data.Map as Map
 import Data.String.CodeUnits as String
 import Data.Number as Number
 
@@ -102,7 +103,7 @@ alternative inner =
 statement :: Parser Expr -> Parser (Stmt Expr)
 statement inner =
   choice
-    [ Set <$ keyword "let" <* spaces
+    [ Use <$ keyword "let" <* spaces
         <*> pattern
         <* equals
         <*> inner
@@ -191,9 +192,9 @@ list :: forall a. Parser a -> Parser (List a)
 list item = between (char '[' <* spaces) (spaces *> char ']') $ by comma item
 
 record :: forall a. Parser Unit -> Parser a -> Parser (Fields a)
-record sep item = between (char '{' <* spaces) (spaces *> char '}') $ by comma entry
+record sep item = Map.fromFoldable <$> (between (char '{' <* spaces) (spaces *> char '}') $ by comma entry)
   where
-  entry = { name: _, value: _ } <$> lower <* spaces <* sep <*> item
+  entry = (**) <$> lower <* spaces <* sep <*> item
 
 -- PATTERNS --------------------------------------------------------------------
 pattern :: Parser Pattern
