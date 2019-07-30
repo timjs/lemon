@@ -1,10 +1,11 @@
 module Tophat.Syntax.Common
   ( Alternative
   , Atom(..)
+  , Guarded
   , Mode(..)
   , Prim(..)
   , PrimType(..)
-  , Fields
+  , Dict
   , Parameter
   , Pattern(..)
   , Stmt(..)
@@ -16,7 +17,6 @@ import Preload
 import Data.List (List)
 import Data.Map (Map)
 import Tophat.Names (Name, isLower, isUpper)
-import Data.List as List
 import Data.Map as Map
 
 -- STATEMENTS ------------------------------------------------------------------
@@ -24,8 +24,8 @@ data Stmt e
   = Use Pattern e
   | Bind Pattern e
   | Par Mode (List (List (Stmt e)))
-  | On (List { action :: Name, guard :: e, body :: List (Stmt e) })
-  | When (List { guard :: e, body :: List (Stmt e) })
+  | On (List (Guarded (action :: Name) e))
+  | When (List (Guarded () e))
   | Done
 
 data Mode
@@ -36,7 +36,7 @@ type Guarded r e
   = { guard :: e, body :: List (Stmt e) | r }
 
 -- ATOMS -----------------------------------------------------------------------
-type Fields e
+type Dict e
   = Map Name e
 
 data Atom e
@@ -45,7 +45,7 @@ data Atom e
   | AJust e
   | ANothing
   | AList (List e)
-  | ARecord (Fields e)
+  | ARecord (Dict e)
 
 data Prim
   = B Boolean
@@ -62,7 +62,7 @@ data Pattern
   | PNothing
   | PCons Pattern Pattern
   | PNil
-  | PRecord (Fields Pattern)
+  | PRecord (Dict Pattern)
   | PIgnore
 
 --NOTE: Leave these types as tuples so that we can use the standard Foldable and Traversable instances
@@ -78,7 +78,7 @@ data Type
   | TVar Name
   | TMaybe Type
   | TList Type
-  | TRecord (Fields Type)
+  | TRecord (Dict Type)
   | TTask Type
   | TArrow Type Type
 

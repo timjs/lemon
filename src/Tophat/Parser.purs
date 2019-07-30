@@ -3,7 +3,7 @@ module Tophat.Parser
   ) where
 
 import Preload hiding (between)
-import Tophat.Syntax.Abstract (Alternative, Atom(..), Bindings, Decl(..), Expr(..), Fields, Mode(..), Module(..), Name, Parameter, Pattern(..), Prim(..), PrimType(..), Stmt(..), Type(..))
+import Tophat.Syntax.Abstract (Alternative, Atom(..), Bindings, Decl(..), Expr(..), Dict, Mode(..), Module(..), Name, Parameter, Pattern(..), Prim(..), PrimType(..), Stmt(..), Type(..))
 import Data.List (List(..))
 import Text.Parsing.StringParser (Parser, fail, try)
 import Text.Parsing.StringParser.CodeUnits (anyChar, anyDigit, anyLetter, char, eof, lowerCaseChar, skipSpaces, string, upperCaseChar)
@@ -191,7 +191,7 @@ doublequoted = fromChars <$ char '"' <*> manyTill anyChar (char '"')
 list :: forall a. Parser a -> Parser (List a)
 list item = between (char '[' <* spaces) (spaces *> char ']') $ by comma item
 
-record :: forall a. Parser Unit -> Parser a -> Parser (Fields a)
+record :: forall a. Parser Unit -> Parser a -> Parser (Dict a)
 record sep item = Map.fromFoldable <$> (between (char '{' <* spaces) (spaces *> char '}') $ by comma entry)
   where
   entry = (**) <$> lower <* spaces <* sep <*> item

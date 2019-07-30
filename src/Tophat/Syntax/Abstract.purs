@@ -8,7 +8,7 @@ module Tophat.Syntax.Abstract
   ) where
 
 import Preload
-import Tophat.Syntax.Common
+import Tophat.Syntax.Common (Alternative, Atom(..), Dict, Guarded, Mode(..), Name, Parameter, Pattern(..), Prim(..), PrimType(..), Stmt(..), Type(..), isLower, isUpper)
 import Data.List (List(..))
 
 -- DECLARATIONS ----------------------------------------------------------------
