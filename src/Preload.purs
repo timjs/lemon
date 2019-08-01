@@ -20,11 +20,14 @@ module Preload
 -- Reexports
 import Prelude hiding (mempty, (<<<), (>>>)) as Reexport
 import Control.Alternative as Reexport
+import Data.Bifoldable as Reexport
+import Data.Bifunctor as Reexport
 import Data.Either hiding (Either) as Reexport
 import Data.Enum (class Enum) as Reexport
 import Data.Functor as Reexport
 import Data.Foldable as Reexport
-import Data.Newtype (class Newtype, wrap, unwrap, ala, over, under) as Reexport
+import Data.FoldableWithIndex hiding (foldlDefault, foldrDefault, foldMapDefault) as Reexport
+import Data.Newtype (class Newtype, wrap, unwrap, ala, over, over2, under, under2) as Reexport
 import Data.Maybe as Reexport
 import Data.Traversable as Reexport
 import Data.Tuple hiding (Tuple(Tuple)) as Reexport
@@ -97,3 +100,4 @@ undefined = unsafeCoerce Reexport.unit
 -- Newtypes --
 using :: forall f s b a t. Reexport.Newtype t a => Reexport.Newtype s b => Reexport.Functor f => (a -> t) -> (f s -> t) -> f b -> a
 using _ f = Reexport.unwrap << f << Reexport.map Reexport.wrap
+-- using _ f = f << Reexport.map Reexport.wrap
