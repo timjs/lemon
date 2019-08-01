@@ -1,131 +1,141 @@
 module Tophat.Printer where
-{-
+
 import Preload
-import Data.Array as Array
-import Tophat.Syntax.Canonical
-import Text.Pretty (Doc, hcat, vcat, text)
-import Text.Pretty as Pretty
+import Data.Doc (Columns(..), Doc, indent, line, lines, list, parens, quotes, record, render, text, words)
+import Data.Map (Map, toUnfoldable)
+import Data.List (List)
+import Tophat.Syntax.Canonical (Alternative, Atom(..), Bindings, Decl(..), Expr(..), Mode(..), Module(..), Name, Pattern(..), Prim(..), PrimType(..), Stmt(..), Type(..))
 
 print :: Module -> String
-print = Pretty.render << doModule
+print = render << doModule
 
 -- DECLARATIONS ----------------------------------------------------------------
 doModule :: Module -> Doc
-doModule (Module bs) =
-  vcat
+doModule (Module bindings) =
+  lines
     [ text preamble
-    , neutral
-    , doBindings bs
+    , line
+    , doBindings bindings
     ]
 
 doBindings :: Bindings -> Doc
-doBindings = foldl doDecl neutral
+doBindings bindings = foldlWithIndex doDecl line bindings
 
-doDecl :: Name -> Decl -> Doc -> Doc
-doDecl name (Value typ expr) doc =
-  vcat
-    [ hsep [ text name, text "::", doType typ ]
-    , hsep [ text name, text "=" ]
+doDecl :: Name -> Doc -> Decl -> Doc
+doDecl name doc (Value typ expr) =
+  lines
+    [ doc
+    , line
+    , words [ text name, text "::", doType typ ]
+    , words [ text name, text "=" ]
     , indent $ doExpr expr
-    , neutral
     ]
 
 -- EXPRESSIONS -----------------------------------------------------------------
 doExpr :: Expr -> Doc
 doExpr = case _ of
   Atom a -> doAtom a
-  Lam (pat ** _) inner -> parens $ hsep [ text "\\", doPattern pat, text "->", doExpr inner ]
-  App func arg -> hsep [ parens $ doExpr func, parens $ doExpr arg ]
+  Lam (pat ** typ) inner ->
+    parens
+      $ words [ text "\\(", doPattern pat, text "::", doType typ, text ") ->", doExpr inner ]
+  App func arg -> words [ parens $ doExpr func, parens $ doExpr arg ]
   Let decls inner ->
-    vcat
+    lines
       [ text "let"
       , indent $ doBindings decls
       , text "in"
       , doExpr inner
       ]
   Case match alts ->
-    vcat
-      [ hsep [ text "case", doExpr match, text "of" ]
-      , indent $ foldl doAlternative neutral alts
+    lines
+      [ words [ text "case", doExpr match, text "of" ]
+      , indent $ lines $ map doAlternative alts
       ]
-  Seq stmts -> parens $ vcat $ map doStmt stmts
+  Seq stmts -> doStmts stmts
 
 -- STATEMENTS ------------------------------------------------------------------
+doStmts :: List (Stmt Expr) -> Doc
+doStmts stmts =
+  lines
+    [ text "do"
+    , indent $ lines $ map doStmt stmts
+    ]
+
 doStmt :: Stmt Expr -> Doc
 doStmt = case _ of
-  Set pat expr -> hsep [ text "let", doPattern pat, text "=", doExpr expr, text "in" ]
-  Bind pat expr -> bind pat expr
-  Seq expr -> bind PIgnore expr
-  Par brns -> vcat $ map par brns
-  When brns ->
-    vcat
-      [ text ">>>"
-      , indent $ list $ map pair2 brns
+  Use pat expr -> words [ text "let", doPattern pat, text "=", doExpr expr ]
+  Bind pat expr -> words [ doExpr expr, text ">>=", text "\\", doPattern pat, text "->" ]
+  Par mode branches -> using Columns (intercalate sep) $ map (parens << doStmts) branches
+    where
+    sep =
+      wrap $ text
+        $ case mode of
+            All -> "<&>"
+            Any -> "<|>"
+  When options ->
+    lines
+      [ text "only"
+      , indent $ lines $ map doWhen options
       ]
-  On brns ->
-    vcat
-      [ text ">?>"
-      , indent $ list $ map pair3 brns
+  On options ->
+    lines
+      [ text "only"
+      , indent $ lines $ map doOn options
       ]
   --FIXME: How to handle this?
-  Done -> hsep [ text "return", tuple $ map text $ some_tuple_with_visible_names ]
+  Done -> words [ text "done" ]
   where
-  bind pat expr = hsep [ doExpr expr, text ">>=", text "\\", doPattern pat, text "->" ]
+  doWhen option = words [ text "-|", text "when", parens $ doExpr option.guard, doStmts option.body ]
 
-  pair2 (pred ** stmts) = tuple [ doExpr pred, doStmt ?stmt ]
-
-  pair3 (name ** pred ** stmts) = tuple [ text name, doExpr pred, doStmt ?stmt ]
-
-  par stmts =
-    vcat
-      [ text "also"
-      , indent $ vcat $ map doStmt stmts
-      ]
-
-  some_tuple_with_visible_names = undefined
+  doOn option = words [ text "-|", text "on", quotes $ text $ option.action, parens $ doExpr option.guard, doStmts option.body ]
 
 -- ATOMS -----------------------------------------------------------------------
 doAtom :: Atom Expr -> Doc
 doAtom = case _ of
-  APrim bas -> doPrim bas
+  APrim prim -> doPrim prim
   AVar name -> text name
-  AJust inner -> just doExpr inner
-  ANothing -> nothing
-  AList xs -> ?alist
-  ARecord fields -> tuple $ map (doExpr << snd) fields
+  AJust inner -> doJust doExpr inner
+  ANothing -> doNothing
+  AList items -> list $ map doExpr items
+  ARecord fields -> record (text ": ") $ map (bimap text doExpr) $ toList fields
 
 doPrim :: Prim -> Doc
 doPrim = case _ of
-  B true -> text "True"
-  B false -> text "False"
+  B true -> text "true"
+  B false -> text "false"
+  N n -> words [ text "nat", text $ show n ]
   I i -> text $ show i
-  F f -> text $ show f
-  S s -> surround (text "\"") (text "\"") $ text s
+  R r -> text $ show r
+  S s -> quotes $ text s
 
-cons conv head tail = brackets $ hsep [ conv head, text ":", conv tail ]
+doCons :: forall a. (a -> Doc) -> a -> a -> Doc
+doCons conv head tail = words [ conv head, text ":", conv tail ]
 
-nil = text "[]"
+doNil :: Doc
+doNil = text "[]"
 
-just conv inner = hsep [ text "Just", parens $ conv inner ]
+doJust :: forall a. (a -> Doc) -> a -> Doc
+doJust conv inner = words [ text "Just", parens $ conv inner ]
 
-nothing = text "Nothing"
+doNothing :: Doc
+doNothing = text "Nothing"
 
 -- PATTERNS --------------------------------------------------------------------
 doPattern :: Pattern -> Doc
 doPattern = case _ of
   PPrim bas -> doPrim bas
   PVar name -> text name
-  PJust inner -> just doPattern inner
-  PNothing -> nothing
-  PCons head tail -> cons doPattern head tail
-  PNil -> nil
-  PRecord fields -> tuple $ map (text << fst) fields
+  PJust inner -> doJust doPattern inner
+  PNothing -> doNothing
+  PCons head tail -> doCons doPattern head tail
+  PNil -> doNil
+  PRecord fields -> record (text ": ") $ map (bimap text doPattern) $ toList fields
   PIgnore -> text "_"
 
-doAlternative :: Alternative Expr -> Doc -> Doc
-doAlternative (pat ** expr) doc =
-  vcat
-    [ hsep [ doPattern pat, text "->" ]
+doAlternative :: Alternative Expr -> Doc
+doAlternative (pat ** expr) =
+  lines
+    [ words [ doPattern pat, text "->" ]
     , indent $ doExpr expr
     ]
 
@@ -134,43 +144,19 @@ doType :: Type -> Doc
 doType = case _ of
   TPrim b -> doPrimType b
   TVar name -> text name
-  TMaybe inner -> hsep [ text "Maybe", doType inner ]
-  TList inner -> hsep [ text "Array", doType inner ]
-  TRecord fields -> tuple $ map (doType << snd) fields
-  TTask inner -> hsep [ text "Task", doType inner ]
-  TArrow left right -> hsep [ parens $ doType left, text "->", doType right ]
+  TMaybe inner -> words [ text "Maybe", doType inner ]
+  TList inner -> words [ text "Array", doType inner ]
+  TRecord fields -> record (text ":: ") $ map (bimap text doType) $ toList fields
+  TTask inner -> words [ text "Task", doType inner ]
+  TArrow left right -> words [ doType left, text "->", doType right ]
 
 doPrimType :: PrimType -> Doc
-doPrimType b = case b of
+doPrimType = case _ of
   TBool -> text "Bool"
+  TNat -> text "Nat"
   TInt -> text "Int"
-  TFloat -> text "Real"
+  TReal -> text "Real"
   TString -> text "String"
-
--- HELPERS ---------------------------------------------------------------------
-hsep :: forall f. Foldable f => f Doc -> Doc
-hsep = intercalate space
-
-indent :: Doc -> Doc
-indent d = hcat [ Pretty.empty 2 0, d ]
-
-enclose :: Doc -> Doc -> Doc -> Doc
-enclose l r d = hcat [ l, d, r ]
-
-parens :: Doc -> Doc
-parens = enclose (text "(") (text ")")
-
-brackets :: Doc -> Doc
-brackets = enclose (text "[") (text "]")
-
-tuple :: Foldable f => f Doc -> Doc
-tuple = parens << hcat (text ",")
-
-list :: Foldable f => f Doc -> Doc
-list = brackets << hcat (text ",")
-
-space :: Doc
-space = Pretty.empty 1 0
 
 -- PREAMBLE --------------------------------------------------------------------
 preamble :: String
@@ -180,10 +166,9 @@ module Main where
 
 import Preface
 
-...some more things...
+-- Maybe some more things ...
 """
--}
 
--- hcat <=> join
--- hsep <=> words
--- vcat <=> lines
+-- HELPERS ---------------------------------------------------------------------
+toList :: forall k v. Map k v -> List (k ** v)
+toList = toUnfoldable
