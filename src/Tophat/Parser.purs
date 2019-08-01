@@ -159,7 +159,7 @@ basic =
     [ B true <$ keyword "True"
     , B false <$ keyword "False"
     , I <$> try int --NOTE: ints are like floats, we need to backtrack here
-    , F <$> float
+    , R <$> float
     , S <$> doublequoted
     ]
 
@@ -244,7 +244,7 @@ basicType =
   choice
     [ TBool <$ keyword "bool"
     , TInt <$ keyword "int"
-    , TFloat <$ keyword "float"
+    , TReal <$ keyword "float"
     , TString <$ keyword "string"
     ]
 

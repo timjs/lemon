@@ -24,7 +24,7 @@ data Stmt e
   = Use Pattern e
   | Bind Pattern e
   | Par Mode (List (List (Stmt e)))
-  | On (List (Guarded (action :: Name) e))
+  | On (List (Guarded ( action :: Name ) e))
   | When (List (Guarded () e))
   | Done
 
@@ -51,7 +51,7 @@ data Prim
   = B Boolean
   | N Nat
   | I Int
-  | F Number
+  | R Number
   | S String
 
 -- PATTERNS --------------------------------------------------------------------
@@ -86,7 +86,7 @@ data PrimType
   = TBool
   | TNat
   | TInt
-  | TFloat
+  | TReal
   | TString
 
 -- FOLDABLE & TRAVERSABLE ------------------------------------------------------
